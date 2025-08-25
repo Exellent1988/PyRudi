@@ -30,7 +30,7 @@ class RunningDinnerOptimizer:
         self.distances = {}  # Simulierte Entfernungen
         self.courses = ['appetizer', 'main_course', 'dessert']
         self.k = 3  # Anzahl Teams pro Event (Host + 2 Gäste)
-        
+
         # Progress-Tracking für Live-Updates
         self.progress_key = f"optimization_progress_{event.id}"
         self.log_key = f"optimization_log_{event.id}"
@@ -40,6 +40,44 @@ class RunningDinnerOptimizer:
         self.P1 = 100.0  # Penalty für zu wenige Teams (k-1)
         self.P2 = 100.0  # Penalty für zu viele Teams (k+1)
         self.P3 = 50.0   # Penalty für mehrfache Begegnungen
+
+    def _init_progress(self):
+        """Initialisiere Progress-Tracking"""
+        cache.set(self.progress_key, {
+            'step': 0,
+            'total_steps': 5,
+            'current_task': 'Starte Optimierung...',
+            'percentage': 0,
+            'status': 'running'
+        }, timeout=300)  # 5 Minuten Cache
+
+        cache.set(self.log_key, [], timeout=300)
+
+    def _update_progress(self, step: int, total_steps: int, task: str, details: str = None):
+        """Update Progress für Live-Anzeige"""
+        percentage = int((step / total_steps) * 100)
+
+        progress = {
+            'step': step,
+            'total_steps': total_steps,
+            'current_task': task,
+            'percentage': percentage,
+            'status': 'running' if step < total_steps else 'completed'
+        }
+
+        cache.set(self.progress_key, progress, timeout=300)
+
+        # Log-Eintrag hinzufügen
+        if details:
+            logs = cache.get(self.log_key, [])
+            logs.append({
+                'timestamp': timezone.now().strftime('%H:%M:%S'),
+                'message': details
+            })
+            # Nur die letzten 50 Log-Einträge behalten
+            if len(logs) > 50:
+                logs = logs[-50:]
+            cache.set(self.log_key, logs, timeout=300)
 
     def load_teams(self):
         """Lade bestätigte Teams für das Event"""
@@ -64,6 +102,8 @@ class RunningDinnerOptimizer:
         from .routing import get_route_calculator
 
         n = len(self.teams)
+        self._update_progress(1, 5, f"Berechne Routen für {n} Teams",
+                              f"🗺️ Berechne echte Fußgänger-Routen für {n} Teams...")
         logger.info(f"🗺️ Berechne echte Fußgänger-Routen für {n} Teams...")
 
         # Verwende echtes Routing
@@ -368,6 +408,8 @@ class RunningDinnerOptimizer:
         Korrekte Running Dinner Lösung
         Prinzip: Jedes Team hostet GENAU einen Kurs und besucht die anderen beiden
         """
+        self._update_progress(2, 5, "Running Dinner Algorithmus",
+                              "🍽️ Starte Running Dinner Algorithmus...")
         logger.info("🍽️ Starte Running Dinner Algorithmus...")
 
         n_teams = len(self.teams)
@@ -445,14 +487,14 @@ class RunningDinnerOptimizer:
                         distance = self.distances[(
                             current_location.id, potential_host.id)]
 
-                        # Verbessertes Scoring: Stark ungleiche Verteilung bestrafen
+                        # Verbessertes Scoring: Gleichmäßige Verteilung stark priorisieren
                         ideal_guests_per_host = (
                             n_teams - len(host_teams_by_course[course])) / len(host_teams_by_course[course])
                         guest_penalty = max(
-                            0, current_guest_count - ideal_guests_per_host) * 20
+                            0, current_guest_count - ideal_guests_per_host) * 50  # Höher gewichtet!
 
-                        # Score = Gäste-Ungleichgewicht + normalisierte Entfernung
-                        score = guest_penalty + distance
+                        # Score = Stark gewichtetes Gäste-Ungleichgewicht + geringe Distanz-Komponente
+                        score = guest_penalty + distance * 0.3  # Distanz nur 30% Gewichtung
 
                         if score < best_score:
                             best_score = score
@@ -499,6 +541,8 @@ class RunningDinnerOptimizer:
         solution['travel_times'] = {course: avg_distance for course in courses}
 
         # SCHRITT 4: Post-Optimierung - Verbessere Verteilung und Distanzen
+        self._update_progress(4, 5, "Post-Optimierung",
+                              "🔄 Starte Post-Optimierung...")
         logger.info("🔄 Starte Post-Optimierung...")
         optimized_solution = self.improve_guest_distribution(
             solution, guests_per_host, host_teams_by_course)
@@ -515,7 +559,9 @@ class RunningDinnerOptimizer:
         improved_assignments = solution['assignments'].copy()
 
         # Mehrere Optimierungsiterationen
-        for iteration in range(3):  # Max 3 Iterationen
+        # Flexibel konfigurierbar
+        max_iterations = getattr(self, 'max_iterations', 3)
+        for iteration in range(max_iterations):
             logger.info(f"🔄 Optimierungs-Iteration {iteration + 1}")
             improvement_found = False
 
@@ -620,7 +666,149 @@ class RunningDinnerOptimizer:
         optimized_solution['assignments'] = improved_assignments
         optimized_solution['objective_value'] = new_total_distance
 
+        # Finale Progress-Update
+        self._update_progress(5, 5, "Optimierung abgeschlossen",
+                              f"✅ Optimierung erfolgreich! Finale Distanz: {new_total_distance:.1f}km")
+
         return optimized_solution
+
+    def run_additional_optimization(self, max_additional_iterations=5):
+        """
+        Führe weitere Optimierungsiterationen auf bereits optimierter Lösung durch
+        """
+        from optimization.models import OptimizationRun, TeamAssignment
+
+        # Hole die neueste abgeschlossene Optimierung
+        latest_optimization = self.event.optimization_runs.filter(
+            status='completed'
+        ).order_by('-completed_at').first()
+
+        if not latest_optimization:
+            raise ValueError("Keine abgeschlossene Optimierung gefunden")
+
+        self._update_progress(0, 3, "Lade bestehende Lösung",
+                              "🔄 Lade bestehende Optimierung...")
+
+        # Lade Teams und Distanzen
+        self.load_teams()
+        self.calculate_distances()
+
+        # Konvertiere TeamAssignments zurück in Lösungsformat
+        assignments = latest_optimization.assignments.all()
+        solution = self._convert_assignments_to_solution(assignments)
+
+        self._update_progress(1, 3, "Weitere Optimierung",
+                              f"🔄 Starte {max_additional_iterations} weitere Iterationen...")
+
+        # Rekonstruiere guests_per_host und host_teams_by_course
+        guests_per_host, host_teams_by_course = self._rebuild_guest_mapping(
+            assignments)
+
+        # Führe zusätzliche Optimierung durch
+        self.max_iterations = max_additional_iterations
+        optimized_solution = self.improve_guest_distribution(
+            solution, guests_per_host, host_teams_by_course)
+
+        self._update_progress(2, 3, "Speichere Verbesserungen",
+                              "💾 Speichere verbesserte Zuordnungen...")
+
+        # Aktualisiere die bestehenden TeamAssignment-Objekte
+        self._update_existing_assignments(
+            optimized_solution, latest_optimization)
+
+        self._update_progress(3, 3, "Zusätzliche Optimierung abgeschlossen",
+                              f"✅ Weitere Optimierung abgeschlossen! Neue Distanz: {optimized_solution['objective_value']:.1f}km")
+
+        return optimized_solution
+
+    def _convert_assignments_to_solution(self, assignments):
+        """Konvertiere TeamAssignment-Objekte zurück in Solution-Format"""
+        solution_assignments = []
+        total_distance = 0
+
+        for assignment in assignments:
+            team = assignment.team
+            hosts = {
+                'appetizer': assignment.hosts_appetizer,
+                'main_course': assignment.hosts_main_course,
+                'dessert': assignment.hosts_dessert
+            }
+
+            distances = {
+                'appetizer': assignment.distance_appetizer or 0,
+                'main_course': assignment.distance_main_course or 0,
+                'dessert': assignment.distance_dessert or 0
+            }
+
+            solution_assignment = {
+                'team': team,
+                'hosts': hosts,
+                'course_hosted': assignment.course,
+                'distances': distances,
+                'total_distance': assignment.total_distance or 0
+            }
+
+            solution_assignments.append(solution_assignment)
+            total_distance += solution_assignment['total_distance']
+
+        return {
+            'assignments': solution_assignments,
+            'objective_value': total_distance,
+            'travel_times': {}
+        }
+
+    def _rebuild_guest_mapping(self, assignments):
+        """Rekonstruiere guests_per_host und host_teams_by_course aus Assignments"""
+        guests_per_host = {}
+        host_teams_by_course = {'appetizer': [],
+                                'main_course': [], 'dessert': []}
+
+        # Initialisiere
+        for team in self.teams:
+            guests_per_host[team.id] = []
+
+        # Sammle Hosts und Gäste
+        for assignment in assignments:
+            team = assignment.team
+            course_hosted = assignment.course
+
+            # Füge zu host_teams_by_course hinzu
+            if team not in host_teams_by_course[course_hosted]:
+                host_teams_by_course[course_hosted].append(team)
+
+            # Füge zu guests_per_host hinzu
+            for course in ['appetizer', 'main_course', 'dessert']:
+                if course != course_hosted:
+                    host = getattr(assignment, f'hosts_{course}')
+                    if host:
+                        guests_per_host[host.id].append(team)
+
+        return guests_per_host, host_teams_by_course
+
+    def _update_existing_assignments(self, optimized_solution, optimization_run):
+        """Aktualisiere bestehende TeamAssignment-Objekte mit neuen Werten"""
+        for solution_assignment in optimized_solution['assignments']:
+            team = solution_assignment['team']
+
+            # Finde das entsprechende TeamAssignment
+            assignment = optimization_run.assignments.get(team=team)
+
+            # Update hosts
+            assignment.hosts_appetizer = solution_assignment['hosts']['appetizer']
+            assignment.hosts_main_course = solution_assignment['hosts']['main_course']
+            assignment.hosts_dessert = solution_assignment['hosts']['dessert']
+
+            # Update distances
+            assignment.distance_appetizer = solution_assignment['distances']['appetizer']
+            assignment.distance_main_course = solution_assignment['distances']['main_course']
+            assignment.distance_dessert = solution_assignment['distances']['dessert']
+            assignment.total_distance = solution_assignment['total_distance']
+
+            assignment.save()
+
+        # Update optimization run statistics
+        optimization_run.total_distance = optimized_solution['objective_value']
+        optimization_run.save()
 
     def optimize(self) -> Dict:
         """

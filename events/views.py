@@ -873,37 +873,116 @@ def get_route_geometry(request, event_id):
     API-Endpoint für Route-Geometrie (echte Fußwege für Kartendarstellung)
     """
     event = get_object_or_404(Event, id=event_id)
-    
+
     # Prüfe Berechtigung
     if not (request.user.is_staff or request.user.is_superuser):
         return JsonResponse({'error': 'Keine Berechtigung'}, status=403)
-    
+
     # Parameter aus Request
     start_lat = request.GET.get('start_lat')
-    start_lng = request.GET.get('start_lng') 
+    start_lng = request.GET.get('start_lng')
     end_lat = request.GET.get('end_lat')
     end_lng = request.GET.get('end_lng')
-    
+
     if not all([start_lat, start_lng, end_lat, end_lng]):
         return JsonResponse({'error': 'Fehlende Koordinaten'}, status=400)
-    
+
     try:
         start_coords = (float(start_lat), float(start_lng))
         end_coords = (float(end_lat), float(end_lng))
-        
+
         # Hole Route-Geometrie
         from .routing import get_route_calculator
         route_calc = get_route_calculator()
-        
-        route_points = route_calc.get_walking_route_geometry(start_coords, end_coords)
-        
+
+        route_points = route_calc.get_walking_route_geometry(
+            start_coords, end_coords)
+
         return JsonResponse({
             'success': True,
             'route_points': route_points,
             'point_count': len(route_points) if route_points else 0
         })
-        
+
     except ValueError:
         return JsonResponse({'error': 'Ungültige Koordinaten'}, status=400)
     except Exception as e:
         return JsonResponse({'error': f'Route-Fehler: {str(e)}'}, status=500)
+
+
+@login_required
+def get_optimization_progress(request, event_id):
+    """
+    API-Endpoint für Optimierung-Progress Updates
+    """
+    event = get_object_or_404(Event, id=event_id)
+
+    # Prüfe Berechtigung
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Keine Berechtigung'}, status=403)
+
+    from django.core.cache import cache
+
+    progress_key = f"optimization_progress_{event_id}"
+    log_key = f"optimization_log_{event_id}"
+
+    progress = cache.get(progress_key, {
+        'step': 0,
+        'total_steps': 5,
+        'current_task': 'Keine aktive Optimierung',
+        'percentage': 0,
+        'status': 'idle'
+    })
+
+    logs = cache.get(log_key, [])
+
+    return JsonResponse({
+        'success': True,
+        'progress': progress,
+        'logs': logs[-20:]  # Nur die letzten 20 Log-Einträge
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def run_additional_optimization(request, event_id):
+    """
+    Führe weitere Optimierungsiterationen durch
+    """
+    event = get_object_or_404(Event, id=event_id)
+
+    # Prüfe Berechtigung
+    if not event.can_user_run_optimization(request.user):
+        messages.error(
+            request, 'Sie haben keine Berechtigung, weitere Optimierungen zu starten.')
+        return redirect('events:optimization_results', event_id=event_id)
+
+    try:
+        from events.optimization import RunningDinnerOptimizer
+
+        # Hole Anzahl zusätzlicher Iterationen aus Form
+        additional_iterations = int(
+            request.POST.get('additional_iterations', 5))
+        additional_iterations = max(
+            1, min(additional_iterations, 10))  # 1-10 Iterationen
+
+        messages.info(
+            request, f'🔄 Starte {additional_iterations} weitere Optimierungsiterationen...')
+
+        # Führe zusätzliche Optimierung durch
+        optimizer = RunningDinnerOptimizer(event)
+        solution = optimizer.run_additional_optimization(
+            max_additional_iterations=additional_iterations)
+
+        messages.success(
+            request,
+            f'✅ Weitere Optimierung abgeschlossen! '
+            f'Neue Gesamtdistanz: {solution["objective_value"]:.1f}km'
+        )
+
+    except Exception as e:
+        logger.error(f"Weitere Optimierung fehlgeschlagen: {e}")
+        messages.error(
+            request, f'❌ Weitere Optimierung fehlgeschlagen: {str(e)}')
+
+    return redirect('events:optimization_results', event_id=event_id)

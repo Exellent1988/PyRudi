@@ -86,6 +86,60 @@
         </div>
     </div>
 
+    <!-- Weitere Optimierung & Progress Bereich -->
+    {% if user.is_staff or user.is_superuser %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="card-title mb-0">🔧 Optimierung-Tools</h6>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#additionalOptimizationModal">
+                                🔄 Weitere Optimierung
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="toggleProgressView()">
+                                📊 Progress anzeigen
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress-Anzeige (standardmäßig ausgeblendet) -->
+                    <div id="progressSection" style="display: none;">
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                0%
+                            </div>
+                        </div>
+                        <p id="currentTask" class="mb-2 small text-muted">Keine aktive Optimierung</p>
+                        
+                        <!-- Ausklappbare Logs -->
+                        <div class="accordion" id="progressAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="logsHeader">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#logsCollapse" aria-expanded="false" aria-controls="logsCollapse">
+                                        📋 Live Logs
+                                    </button>
+                                </h2>
+                                <div id="logsCollapse" class="accordion-collapse collapse" aria-labelledby="logsHeader" 
+                                     data-bs-parent="#progressAccordion">
+                                    <div class="accordion-body">
+                                        <div id="optimizationLogs" class="small" style="max-height: 200px; overflow-y: auto; font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 3px;">
+                                            <div class="text-muted">Keine Logs verfügbar</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Course Overview Tabs -->
     <div class="row">
         <div class="col-12">
@@ -747,6 +801,123 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(initMap, 500);
     }
 });
+
+// Progress-Tracking Funktionen
+let progressInterval = null;
+
+function toggleProgressView() {
+    const progressSection = document.getElementById('progressSection');
+    if (progressSection.style.display === 'none') {
+        progressSection.style.display = 'block';
+        startProgressTracking();
+    } else {
+        progressSection.style.display = 'none';
+        stopProgressTracking();
+    }
+}
+
+function startProgressTracking() {
+    // Sofort einmal laden
+    updateProgress();
+    
+    // Dann alle 2 Sekunden aktualisieren
+    progressInterval = setInterval(updateProgress, 2000);
+}
+
+function stopProgressTracking() {
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+}
+
+async function updateProgress() {
+    try {
+        const response = await fetch(`/events/{{ event.id }}/optimization-progress/`);
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update Progress Bar
+            const progressBar = document.getElementById('progressBar');
+            const currentTask = document.getElementById('currentTask');
+            
+            progressBar.style.width = data.progress.percentage + '%';
+            progressBar.setAttribute('aria-valuenow', data.progress.percentage);
+            progressBar.textContent = data.progress.percentage + '%';
+            currentTask.textContent = data.progress.current_task;
+            
+            // Update Progress Bar color based on status
+            progressBar.className = 'progress-bar progress-bar-striped';
+            if (data.progress.status === 'running') {
+                progressBar.className += ' progress-bar-animated bg-primary';
+            } else if (data.progress.status === 'completed') {
+                progressBar.className += ' bg-success';
+            } else {
+                progressBar.className += ' bg-secondary';
+            }
+            
+            // Update Logs
+            const logsContainer = document.getElementById('optimizationLogs');
+            if (data.logs && data.logs.length > 0) {
+                logsContainer.innerHTML = data.logs.map(log => 
+                    `<div><span class="text-primary">[${log.timestamp}]</span> ${log.message}</div>`
+                ).join('');
+                // Auto-scroll to bottom
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+            }
+            
+            // Stoppe Tracking wenn abgeschlossen
+            if (data.progress.status === 'completed') {
+                setTimeout(stopProgressTracking, 5000); // Stoppe nach 5 Sekunden
+            }
+        }
+    } catch (error) {
+        console.error('Progress-Update fehlgeschlagen:', error);
+    }
+}
+
 </script>
+
+<!-- Modal für weitere Optimierung -->
+<div class="modal fade" id="additionalOptimizationModal" tabindex="-1" aria-labelledby="additionalOptimizationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="additionalOptimizationModalLabel">🔄 Weitere Optimierung</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'events:run_additional_optimization' event.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted">
+                        Führe weitere Optimierungsiterationen durch, um die Gästeverteilung und Distanzen weiter zu verbessern.
+                    </p>
+                    
+                    <div class="mb-3">
+                        <label for="additional_iterations" class="form-label">Anzahl zusätzlicher Iterationen:</label>
+                        <select class="form-select" id="additional_iterations" name="additional_iterations">
+                            <option value="3">3 Iterationen (schnell)</option>
+                            <option value="5" selected>5 Iterationen (empfohlen)</option>
+                            <option value="8">8 Iterationen (gründlich)</option>
+                            <option value="10">10 Iterationen (maximum)</option>
+                        </select>
+                        <div class="form-text">
+                            Mehr Iterationen = bessere Optimierung, aber längere Laufzeit
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>💡 Tipp:</strong> Die Optimierung priorisiert jetzt <strong>gleichmäßige Gästeverteilung</strong> 
+                        über minimale Distanzen. Sie können den Progress oben verfolgen.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">🔄 Optimierung starten</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
