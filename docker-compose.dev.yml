@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (Development)
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: running_dinner_dev
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - running_dinner_dev_network
+
+  # Redis Cache (Development)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    networks:
+      - running_dinner_dev_network
+
+  # Django Development Server
+  web:
+    build:
+      context: .
+      target: development
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=dev-secret-key-not-for-production
+      - DB_NAME=running_dinner_dev
+      - DB_USER=dev_user
+      - DB_PASSWORD=dev_password
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/1
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+    volumes:
+      # Live Code Reload
+      - .:/app
+      - /app/venv
+      - dev_static_volume:/app/staticfiles
+      - dev_media_volume:/app/media
+    ports:
+      - "8001:8000"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - running_dinner_dev_network
+    command: python manage.py runserver 0.0.0.0:8000
+    stdin_open: true
+    tty: true
+
+  # MailHog für E-Mail Testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - running_dinner_dev_network
+
+  # pgAdmin für Database Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@runningdinner.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    networks:
+      - running_dinner_dev_network
+
+volumes:
+  postgres_dev_data:
+  dev_static_volume:
+  dev_media_volume:
+  pgadmin_data:
+
+networks:
+  running_dinner_dev_network:
+    driver: bridge
+
+
+
+
+

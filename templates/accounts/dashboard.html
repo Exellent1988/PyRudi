@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Running Dinner{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="display-6 fw-bold">
+                        Willkommen, {{ user.first_name|default:user.username }}!
+                    </h1>
+                    <p class="lead text-muted">
+                        Verwalte deine Teams und Events hier.
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'accounts:create_team' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Neues Team
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Invitations -->
+    {% if team_invitations %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info border-0 shadow-sm">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-envelope-fill fs-4 me-3"></i>
+                    <div>
+                        <h5 class="alert-heading mb-1">Team-Einladungen</h5>
+                        <p class="mb-2">Du hast {{ team_invitations|length }} offene Team-Einladung{{ team_invitations|length|pluralize:'en' }}.</p>
+                        
+                        {% for invitation in team_invitations %}
+                        <div class="d-flex justify-content-between align-items-center bg-white rounded p-3 mb-2">
+                            <div>
+                                <strong>{{ invitation.team.name }}</strong>
+                                <span class="text-muted">von {{ invitation.invited_by.full_name }}</span>
+                                {% if invitation.message %}
+                                <br><small class="text-muted">"{{ invitation.message }}"</small>
+                                {% endif %}
+                            </div>
+                            <div class="btn-group" role="group">
+                                <a href="#" class="btn btn-success btn-sm">
+                                    <i class="bi bi-check"></i> Annehmen
+                                </a>
+                                <a href="#" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-x"></i> Ablehnen
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- User Profile Summary -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person text-primary"></i>
+                        Profil-Übersicht
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">Kontakt</h6>
+                            <p class="text-muted mb-2">
+                                <i class="bi bi-envelope me-2"></i>{{ user.email }}
+                            </p>
+                            <p class="text-muted mb-2">
+                                <i class="bi bi-telephone me-2"></i>{{ user.phone_number|default:"Nicht angegeben" }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">Ernährung & Gesundheit</h6>
+                            {% if user.has_dietary_restrictions %}
+                                <div class="mb-2">
+                                    <i class="bi bi-heart-pulse me-2 text-warning"></i>
+                                    <span class="small">{{ user.dietary_summary }}</span>
+                                </div>
+                                {% if user.critical_allergies.exists %}
+                                <div class="alert alert-danger py-2 mb-2">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <strong>{{ user.critical_allergies.count }} kritische Allergie{{ user.critical_allergies.count|pluralize:'n' }}</strong>
+                                </div>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-muted mb-2">
+                                    <i class="bi bi-check-circle me-2 text-success"></i>
+                                    Keine besonderen Einschränkungen
+                                </p>
+                            {% endif %}
+                            
+                            <a href="{% url 'accounts:edit_profile' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-pencil"></i> Profil bearbeiten
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-speedometer2 text-success"></i>
+                        Organisator werden
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted small">Organisiere dein eigenes Running Dinner Event!</p>
+                    <a href="{% url 'events:organizer_dashboard' %}" class="btn btn-success">
+                        <i class="bi bi-calendar-plus"></i> Event erstellen
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Meine Teams -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-people-fill text-primary"></i>
+                            Meine Teams
+                        </h5>
+                        <span class="badge bg-primary">{{ user_teams|length }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if user_teams %}
+                        <div class="row g-3">
+                            {% for team in user_teams %}
+                            <div class="col-md-6">
+                                <div class="card border border-light">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-0">{{ team.name }}</h6>
+                                            <span class="badge bg-success">Aktiv</span>
+                                        </div>
+                                        
+                                        {% if team.description %}
+                                        <p class="card-text text-muted small mb-2">{{ team.description|truncatechars:80 }}</p>
+                                        {% endif %}
+                                        
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                <i class="bi bi-people"></i> {{ team.member_count }} Mitglied{{ team.member_count|pluralize:'er' }}
+                                            </small>
+                                            <a href="{% url 'accounts:team_detail' team_id=team.id %}" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-arrow-right"></i> Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                            <h6 class="mt-3 text-muted">Noch keine Teams</h6>
+                            <p class="text-muted">Erstelle dein erstes Team oder warte auf eine Einladung.</p>
+                            <a href="{% url 'accounts:create_team' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Team erstellen
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Profile Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-person-circle text-primary"></i>
+                        Mein Profil
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="Profilbild" class="rounded-circle" width="80" height="80">
+                        {% else %}
+                        <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                            <i class="bi bi-person-fill text-white fs-2"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-center">
+                        <h6 class="mb-1">{{ user.full_name|default:user.username }}</h6>
+                        <p class="text-muted small mb-3">{{ user.email }}</p>
+                        
+                        {% if user.dietary_restrictions %}
+                        <div class="alert alert-warning py-2">
+                            <small>
+                                <i class="bi bi-exclamation-triangle"></i>
+                                Ernährungseinschränkungen: {{ user.dietary_restrictions|truncatechars:50 }}
+                            </small>
+                        </div>
+                        {% endif %}
+                        
+                        <a href="#" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil"></i> Profil bearbeiten
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightning-fill text-warning"></i>
+                        Schnellaktionen
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'accounts:create_team' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Neues Team erstellen
+                        </a>
+                        <a href="{% url 'events:event_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-calendar-event"></i> Events durchsuchen
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary">
+                            <i class="bi bi-question-circle"></i> Hilfe & Support
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

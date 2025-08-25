@@ -1,0 +1,106 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Django: Run Server",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": [
+                "runserver",
+                "0.0.0.0:8000"
+            ],
+            "django": true,
+            "justMyCode": false,
+            "env": {
+                "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings",
+                "DEBUG": "True"
+            },
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Django: Debug Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "django": true,
+            "justMyCode": false,
+            "env": {
+                "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings",
+                "DEBUG": "True"
+            },
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Django: Test",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": [
+                "test",
+                "--keepdb",
+                "--verbosity=2"
+            ],
+            "django": true,
+            "justMyCode": false,
+            "env": {
+                "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings",
+                "DEBUG": "True"
+            },
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Django: Shell",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": [
+                "shell"
+            ],
+            "django": true,
+            "justMyCode": false,
+            "env": {
+                "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings",
+                "DEBUG": "True"
+            },
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Django: Migrate",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": [
+                "migrate"
+            ],
+            "django": true,
+            "justMyCode": false,
+            "env": {
+                "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings",
+                "DEBUG": "True"
+            },
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Django: Make Migrations",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": [
+                "makemigrations"
+            ],
+            "django": true,
+            "justMyCode": false,
+            "env": {
+                "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings",
+                "DEBUG": "True"
+            },
+            "console": "integratedTerminal"
+        }
+    ]
+}
+
+
+
+
+

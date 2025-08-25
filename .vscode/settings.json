@@ -1,0 +1,103 @@
+{
+    // Python Konfiguration
+    "python.defaultInterpreterPath": "/usr/local/bin/python",
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": [
+        "--max-line-length=88",
+        "--extend-ignore=E203,W503"
+    ],
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": ["--line-length=88"],
+    "python.sortImports.args": ["--profile", "black"],
+    
+    // Django Konfiguration
+    "python.envFile": "${workspaceFolder}/.env",
+    "django.snippets.exclude": [
+        "cms",
+        "wagtail"
+    ],
+    
+    // Editor Einstellungen
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+    "editor.rulers": [88],
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    
+    // Dateizuordnungen
+    "files.associations": {
+        "**/templates/**/*.html": "django-html",
+        "**/templates/**": "django-txt",
+        "**/requirements{/**,*}.{txt,in}": "pip-requirements",
+        "*.env*": "dotenv"
+    },
+    
+    // Ausgeschlossene Dateien
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/node_modules": true,
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/.pytest_cache": true,
+        "**/.coverage": true,
+        "**/htmlcov": true,
+        "**/venv": true,
+        "**/env": true,
+        "**/.venv": true
+    },
+    
+    // Testing Konfiguration
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": [
+        ".",
+        "--verbose"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.autoTestDiscoverOnSaveEnabled": true,
+    
+    // Terminal Konfiguration
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.profiles.linux": {
+        "bash": {
+            "path": "/bin/bash",
+            "args": []
+        }
+    },
+    
+    // Emmet für Django Templates
+    "emmet.includeLanguages": {
+        "django-html": "html"
+    },
+    
+    // Git Konfiguration
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    
+    // Workspace Einstellungen
+    "workbench.startupEditor": "readme",
+    "explorer.confirmDelete": false,
+    "explorer.confirmDragAndDrop": false,
+    
+    // REST Client Konfiguration
+    "rest-client.environmentVariables": {
+        "local": {
+            "baseURL": "http://localhost:8000",
+            "apiBaseURL": "http://localhost:8000/api"
+        },
+        "development": {
+            "baseURL": "http://localhost:8001",
+            "apiBaseURL": "http://localhost:8001/api"
+        }
+    }
+}
+
+
+
+
+

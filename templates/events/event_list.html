@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}Events - Running Dinner{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="text-center">
+                <h1 class="display-4 fw-bold">Running Dinner Events</h1>
+                <p class="lead text-muted">
+                    Entdecke spannende Running Dinner Events in deiner Stadt und melde dich mit deinem Team an.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search -->
+    <form method="get" action="{% url 'events:event_list' %}">
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control" name="search" 
+                           placeholder="Nach Events suchen..." value="{{ current_search|default:'' }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="city">
+                    <option value="">Alle Städte</option>
+                    {% for city in available_cities %}
+                    <option value="{{ city }}" {% if city == current_city_filter %}selected{% endif %}>
+                        {{ city }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Active Filters Display -->
+        {% if current_search or current_city_filter %}
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted">Aktive Filter:</span>
+                    {% if current_search %}
+                    <span class="badge bg-primary">
+                        Suche: "{{ current_search }}"
+                        <a href="?{% if current_city_filter %}city={{ current_city_filter }}{% endif %}" class="text-white ms-1">
+                            <i class="bi bi-x"></i>
+                        </a>
+                    </span>
+                    {% endif %}
+                    {% if current_city_filter %}
+                    <span class="badge bg-success">
+                        Stadt: {{ current_city_filter }}
+                        <a href="?{% if current_search %}search={{ current_search }}{% endif %}" class="text-white ms-1">
+                            <i class="bi bi-x"></i>
+                        </a>
+                    </span>
+                    {% endif %}
+                    <a href="{% url 'events:event_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-x-circle"></i> Alle Filter zurücksetzen
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </form>
+
+    <!-- Events List -->
+    {% if events %}
+    <div class="row g-4">
+        {% for event in events %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="card h-100 border-0 shadow-sm event-card">
+                <!-- Event Image -->
+                <div class="position-relative">
+                    <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=200&fit=crop&crop=center" 
+                         class="card-img-top" alt="{{ event.name }}" style="height: 200px; object-fit: cover;">
+                    
+                    <!-- Status Badge -->
+                    <div class="position-absolute top-0 start-0 m-2">
+                        {% if event.status == 'registration_open' %}
+                        <span class="badge bg-success">Anmeldung offen</span>
+                        {% elif event.status == 'registration_closed' %}
+                        <span class="badge bg-warning">Anmeldung geschlossen</span>
+                        {% elif event.status == 'in_progress' %}
+                        <span class="badge bg-primary">Läuft</span>
+                        {% elif event.status == 'completed' %}
+                        <span class="badge bg-secondary">Abgeschlossen</span>
+                        {% else %}
+                        <span class="badge bg-info">{{ event.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Price Badge -->
+                    <div class="position-absolute top-0 end-0 m-2">
+                        <span class="badge bg-dark">{{ event.price_per_person }}€ p.P.</span>
+                    </div>
+                </div>
+
+                <div class="card-body d-flex flex-column">
+                    <!-- Event Info -->
+                    <div class="mb-3">
+                        <h5 class="card-title fw-bold">{{ event.name }}</h5>
+                        <p class="card-text text-muted">{{ event.description|truncatechars:100 }}</p>
+                    </div>
+
+                    <!-- Event Details -->
+                    <div class="mb-3 flex-grow-1">
+                        <div class="row g-2 small">
+                            <div class="col-6">
+                                <div class="d-flex align-items-center text-muted">
+                                    <i class="bi bi-calendar-event me-2"></i>
+                                    <span>{{ event.event_date|date:"d.m.Y" }}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center text-muted">
+                                    <i class="bi bi-geo-alt me-2"></i>
+                                    <span>{{ event.city }}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center text-muted">
+                                    <i class="bi bi-people me-2"></i>
+                                    <span>{{ event.team_registrations.count }}/{{ event.max_teams }} Teams</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center text-muted">
+                                    <i class="bi bi-clock me-2"></i>
+                                    <span>{{ event.appetizer_time|time:"H:i" }} Uhr</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course Times -->
+                    <div class="mb-3">
+                        <div class="row g-1 small">
+                            <div class="col-4 text-center">
+                                <div class="bg-primary bg-opacity-10 rounded p-2">
+                                    <div class="fw-bold text-primary">Vorspeise</div>
+                                    <div class="text-muted">{{ event.appetizer_time|time:"H:i" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-4 text-center">
+                                <div class="bg-success bg-opacity-10 rounded p-2">
+                                    <div class="fw-bold text-success">Hauptgang</div>
+                                    <div class="text-muted">{{ event.main_course_time|time:"H:i" }}</div>
+                                </div>
+                            </div>
+                            <div class="col-4 text-center">
+                                <div class="bg-warning bg-opacity-10 rounded p-2">
+                                    <div class="fw-bold text-warning">Nachspeise</div>
+                                    <div class="text-muted">{{ event.dessert_time|time:"H:i" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    {% if event.max_teams > 0 %}
+                    <div class="mb-3">
+                        {% widthratio event.team_registrations.count event.max_teams 100 as progress_percentage %}
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar {% if progress_percentage >= 90 %}bg-danger{% elif progress_percentage >= 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                 role="progressbar" style="width: {{ progress_percentage }}%"></div>
+                        </div>
+                        <small class="text-muted">{{ progress_percentage }}% belegt</small>
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Button -->
+                    <div class="mt-auto">
+                        <a href="{% url 'events:event_detail' event_id=event.id %}" class="btn btn-primary w-100">
+                            <i class="bi bi-arrow-right"></i> Details & Anmeldung
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Page navigation" class="mt-5">
+        <ul class="pagination justify-content-center">
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1">Previous</a>
+            </li>
+            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item">
+                <a class="page-link" href="#">Next</a>
+            </li>
+        </ul>
+    </nav>
+
+    {% else %}
+    <!-- No Events -->
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-calendar-x text-muted" style="font-size: 4rem;"></i>
+                {% if current_search or current_city_filter %}
+                <h3 class="mt-3 text-muted">Keine Events gefunden</h3>
+                <p class="text-muted">
+                    Keine Events entsprechen deinen Suchkriterien. 
+                    Versuche andere Filter oder
+                    <a href="{% url 'events:event_list' %}">zeige alle Events an</a>.
+                </p>
+                {% else %}
+                <h3 class="mt-3 text-muted">Noch keine Events verfügbar</h3>
+                <p class="text-muted">
+                    Momentan sind keine Running Dinner Events verfügbar. 
+                    Schaue später wieder vorbei oder kontaktiere uns für weitere Informationen.
+                </p>
+                {% endif %}
+                <a href="/" class="btn btn-primary">
+                    <i class="bi bi-house"></i> Zur Startseite
+                </a>
+                {% if user.is_staff %}
+                <a href="{% url 'admin:events_event_add' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-plus-circle"></i> Event erstellen
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.event-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.event-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+</style>
+{% endblock %}

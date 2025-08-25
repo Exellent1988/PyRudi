@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}Running Dinner Webapp - Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">
+                    Willkommen zum Running Dinner
+                </h1>
+                <p class="lead mb-4">
+                    Entdecke die perfekte Kombination aus kulinarischen Genüssen und sozialen Begegnungen. 
+                    Unsere Webapp organisiert automatisch optimale Routen für unvergessliche Running Dinner Events.
+                </p>
+                <div class="d-flex gap-3">
+                    <a href="{% url 'events:event_list' %}" class="btn btn-light btn-lg">
+                        <i class="bi bi-calendar-event"></i> Events ansehen
+                    </a>
+                    {% if not user.is_authenticated %}
+                    <a href="{% url 'admin:login' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-person-plus"></i> Registrieren
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&h=400&fit=crop&crop=center" 
+                     alt="Running Dinner" class="img-fluid rounded shadow">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-12">
+                <h2 class="display-5 fw-bold">Warum Running Dinner?</h2>
+                <p class="lead text-muted">
+                    Eine einzigartige Möglichkeit, neue Menschen zu treffen und kulinarische Abenteuer zu erleben.
+                </p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 feature-card border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                            <i class="bi bi-people-fill text-primary fs-2"></i>
+                        </div>
+                        <h5 class="card-title">Neue Begegnungen</h5>
+                        <p class="card-text text-muted">
+                            Lerne interessante Menschen kennen und knüpfe neue Freundschaften bei einem entspannten Dinner.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 feature-card border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                            <i class="bi bi-map-fill text-success fs-2"></i>
+                        </div>
+                        <h5 class="card-title">Optimale Routenplanung</h5>
+                        <p class="card-text text-muted">
+                            Unsere intelligente Optimierung sorgt für minimale Fahrwege und maximalen Spaß.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 feature-card border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                            <i class="bi bi-heart-fill text-warning fs-2"></i>
+                        </div>
+                        <h5 class="card-title">Kulinarische Vielfalt</h5>
+                        <p class="card-text text-muted">
+                            Genieße drei verschiedene Kurse bei drei verschiedenen Gastgebern - eine kulinarische Reise.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How it Works Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-12">
+                <h2 class="display-5 fw-bold">So funktioniert's</h2>
+                <p class="lead text-muted">
+                    In nur wenigen Schritten zu deinem Running Dinner Erlebnis.
+                </p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-lg-3 text-center">
+                <div class="position-relative">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                         style="width: 80px; height: 80px;">
+                        <span class="fs-3 fw-bold">1</span>
+                    </div>
+                </div>
+                <h5 class="mt-3">Team bilden</h5>
+                <p class="text-muted">
+                    Finde einen Partner und bildet ein Team von 2 Personen.
+                </p>
+            </div>
+            
+            <div class="col-lg-3 text-center">
+                <div class="position-relative">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                         style="width: 80px; height: 80px;">
+                        <span class="fs-3 fw-bold">2</span>
+                    </div>
+                </div>
+                <h5 class="mt-3">Event auswählen</h5>
+                <p class="text-muted">
+                    Wähle ein Running Dinner Event in deiner Stadt aus.
+                </p>
+            </div>
+            
+            <div class="col-lg-3 text-center">
+                <div class="position-relative">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                         style="width: 80px; height: 80px;">
+                        <span class="fs-3 fw-bold">3</span>
+                    </div>
+                </div>
+                <h5 class="mt-3">Anmelden</h5>
+                <p class="text-muted">
+                    Registriere dein Team und gib deine Kochpräferenzen an.
+                </p>
+            </div>
+            
+            <div class="col-lg-3 text-center">
+                <div class="position-relative">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                         style="width: 80px; height: 80px;">
+                        <span class="fs-3 fw-bold">4</span>
+                    </div>
+                </div>
+                <h5 class="mt-3">Genießen</h5>
+                <p class="text-muted">
+                    Folge der optimierten Route und genieße einen unvergesslichen Abend.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Upcoming Events Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h2 class="display-6 fw-bold">Kommende Events</h2>
+                <p class="lead text-muted">
+                    Entdecke Running Dinner Events in deiner Nähe.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'events:event_list' %}" class="btn btn-primary btn-lg">
+                    Alle Events <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            {% if upcoming_events %}
+                {% for event in upcoming_events %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                {% if event.status == 'registration_open' %}
+                                <span class="badge bg-success">Anmeldung offen</span>
+                                {% elif event.status == 'registration_closed' %}
+                                <span class="badge bg-warning">Anmeldung geschlossen</span>
+                                {% elif event.status == 'planning' %}
+                                <span class="badge bg-info">In Planung</span>
+                                {% else %}
+                                <span class="badge bg-primary">{{ event.get_status_display }}</span>
+                                {% endif %}
+                                <small class="text-muted">{{ event.city }}</small>
+                            </div>
+                            <h5 class="card-title">{{ event.name }}</h5>
+                            <p class="card-text text-muted">
+                                {{ event.description|truncatechars:80 }}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar"></i> {{ event.event_date|date:"d.m.Y" }}
+                                </small>
+                                <small class="text-muted">
+                                    <i class="bi bi-people"></i> {{ event.team_registrations.count }} Teams
+                                </small>
+                            </div>
+                            <div class="mt-3">
+                                <a href="{% url 'events:event_detail' event_id=event.id %}" class="btn btn-outline-primary btn-sm">
+                                    Details ansehen
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- Fallback wenn keine Events vorhanden -->
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3 text-muted">Noch keine Events verfügbar</h5>
+                        <p class="text-muted">Neue Running Dinner Events werden bald hinzugefügt. Schaue später wieder vorbei!</p>
+                        {% if user.is_staff %}
+                        <a href="{% url 'admin:events_event_add' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Erstes Event erstellen
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5 bg-primary text-white">
+    <div class="container text-center">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <h2 class="display-5 fw-bold mb-4">
+                    Bereit für dein Running Dinner Abenteuer?
+                </h2>
+                <p class="lead mb-4">
+                    Schließe dich hunderten von Teilnehmern an und erlebe unvergessliche Abende voller 
+                    kulinarischer Genüsse und neuer Begegnungen.
+                </p>
+                <div class="d-flex gap-3 justify-content-center">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'accounts:dashboard' %}" class="btn btn-light btn-lg">
+                        <i class="bi bi-speedometer2"></i> Zum Dashboard
+                    </a>
+                    {% else %}
+                    <a href="{% url 'admin:login' %}" class="btn btn-light btn-lg">
+                        <i class="bi bi-person-plus"></i> Jetzt registrieren
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'events:event_list' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-calendar-event"></i> Events entdecken
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

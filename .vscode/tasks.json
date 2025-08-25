@@ -1,0 +1,172 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Django: Run Server",
+            "type": "shell",
+            "command": "python",
+            "args": ["manage.py", "runserver", "0.0.0.0:8000"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "options": {
+                "env": {
+                    "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings",
+                    "DEBUG": "True"
+                }
+            },
+            "isBackground": true,
+            "problemMatcher": []
+        },
+        {
+            "label": "Django: Run Tests",
+            "type": "shell",
+            "command": "python",
+            "args": ["manage.py", "test", "--verbosity=2"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "options": {
+                "env": {
+                    "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings"
+                }
+            }
+        },
+        {
+            "label": "Django: Make Migrations",
+            "type": "shell",
+            "command": "python",
+            "args": ["manage.py", "makemigrations"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "options": {
+                "env": {
+                    "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings"
+                }
+            }
+        },
+        {
+            "label": "Django: Migrate",
+            "type": "shell",
+            "command": "python",
+            "args": ["manage.py", "migrate"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "options": {
+                "env": {
+                    "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings"
+                }
+            }
+        },
+        {
+            "label": "Django: Shell",
+            "type": "shell",
+            "command": "python",
+            "args": ["manage.py", "shell"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared"
+            },
+            "options": {
+                "env": {
+                    "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings"
+                }
+            }
+        },
+        {
+            "label": "Django: Collect Static",
+            "type": "shell",
+            "command": "python",
+            "args": ["manage.py", "collectstatic", "--noinput"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "options": {
+                "env": {
+                    "DJANGO_SETTINGS_MODULE": "running_dinner_app.settings"
+                }
+            }
+        },
+        {
+            "label": "Code Quality: Run Black",
+            "type": "shell",
+            "command": "black",
+            "args": ["."],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Code Quality: Run Flake8",
+            "type": "shell",
+            "command": "flake8",
+            "args": ["."],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Code Quality: Run isort",
+            "type": "shell",
+            "command": "isort",
+            "args": ["."],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Run All Code Quality Checks",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Code Quality: Run Black",
+                "Code Quality: Run isort",
+                "Code Quality: Run Flake8"
+            ],
+            "group": "test"
+        }
+    ]
+}
+
+
+
+
+

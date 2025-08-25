@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ event.name }} - Running Dinner{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Event Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'events:event_list' %}">Events</a></li>
+                    <li class="breadcrumb-item active">{{ event.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Event Hero -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="position-relative">
+                    <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=300&fit=crop&crop=center" 
+                         class="card-img-top" alt="{{ event.name }}" style="height: 300px; object-fit: cover;">
+                    
+                    <!-- Status Badge -->
+                    <div class="position-absolute top-0 start-0 m-3">
+                        {% if event.status == 'registration_open' %}
+                        <span class="badge bg-success fs-6">Anmeldung offen</span>
+                        {% elif event.status == 'registration_closed' %}
+                        <span class="badge bg-warning fs-6">Anmeldung geschlossen</span>
+                        {% elif event.status == 'in_progress' %}
+                        <span class="badge bg-primary fs-6">Läuft gerade</span>
+                        {% elif event.status == 'completed' %}
+                        <span class="badge bg-secondary fs-6">Abgeschlossen</span>
+                        {% else %}
+                        <span class="badge bg-info fs-6">{{ event.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Price Badge -->
+                    <div class="position-absolute top-0 end-0 m-3">
+                        <span class="badge bg-dark fs-6">{{ event.price_per_person }}€ pro Person</span>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <h1 class="card-title display-6 fw-bold mb-3">{{ event.name }}</h1>
+                    <p class="card-text lead text-muted">{{ event.description }}</p>
+                </div>
+            </div>
+
+            <!-- Event Details -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        Event-Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="bi bi-calendar-event text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Datum</h6>
+                                    <p class="mb-0 text-muted">{{ event.event_date|date:"l, d. F Y" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="bi bi-geo-alt text-success"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Ort</h6>
+                                    <p class="mb-0 text-muted">{{ event.city }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="bi bi-people text-warning"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Teams</h6>
+                                    <p class="mb-0 text-muted">{{ event.team_registrations.count }} von {{ event.max_teams }} angemeldet</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="bi bi-person text-info"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Organisator</h6>
+                                    <p class="mb-0 text-muted">{{ event.organizer.full_name|default:event.organizer.username }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Schedule -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock text-primary"></i>
+                        Tagesablauf
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="text-center p-4 bg-primary bg-opacity-10 rounded">
+                                <i class="bi bi-1-circle-fill text-primary fs-2 mb-2"></i>
+                                <h6 class="fw-bold text-primary">Vorspeise</h6>
+                                <p class="mb-0 fs-5 fw-bold">{{ event.appetizer_time|time:"H:i" }} Uhr</p>
+                                <small class="text-muted">Start des Abends</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="text-center p-4 bg-success bg-opacity-10 rounded">
+                                <i class="bi bi-2-circle-fill text-success fs-2 mb-2"></i>
+                                <h6 class="fw-bold text-success">Hauptgang</h6>
+                                <p class="mb-0 fs-5 fw-bold">{{ event.main_course_time|time:"H:i" }} Uhr</p>
+                                <small class="text-muted">Hauptmahlzeit</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="text-center p-4 bg-warning bg-opacity-10 rounded">
+                                <i class="bi bi-3-circle-fill text-warning fs-2 mb-2"></i>
+                                <h6 class="fw-bold text-warning">Nachspeise</h6>
+                                <p class="mb-0 fs-5 fw-bold">{{ event.dessert_time|time:"H:i" }} Uhr</p>
+                                <small class="text-muted">Süßer Abschluss</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registration Status -->
+            {% if user_registrations %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-success bg-opacity-10 border-0 py-3">
+                    <h5 class="card-title mb-0 text-success">
+                        <i class="bi bi-check-circle"></i>
+                        Deine Anmeldungen
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for registration in user_registrations %}
+                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded mb-2">
+                        <div>
+                            <h6 class="mb-1">{{ registration.team.name }}</h6>
+                            <small class="text-muted">
+                                Status: {{ registration.get_status_display }} 
+                                {% if registration.preferred_course %}
+                                | Bevorzugter Kurs: {{ registration.get_preferred_course_display }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        <span class="badge bg-success">Angemeldet</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Registration Card -->
+            {% if event.is_registration_open and user.is_authenticated %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-person-plus"></i>
+                        Jetzt anmelden
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if user_teams %}
+                    <p class="mb-3">Wähle ein Team für die Anmeldung:</p>
+                    
+                    {% for team in user_teams %}
+                    {% if not team in user_registrations %}
+                    <div class="card border mb-2">
+                        <div class="card-body p-3">
+                            <h6 class="card-title mb-1">{{ team.name }}</h6>
+                            <p class="card-text small text-muted mb-2">{{ team.member_count }} Mitglied{{ team.member_count|pluralize:'er' }}</p>
+                            <button class="btn btn-outline-primary btn-sm w-100">
+                                <i class="bi bi-plus"></i> Team anmelden
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-people text-muted fs-1"></i>
+                        <p class="mt-2 mb-3">Du hast noch kein Team.</p>
+                        <a href="{% url 'accounts:create_team' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Team erstellen
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% elif not user.is_authenticated %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-info text-white py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Anmeldung erforderlich
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <p class="mb-3">Melde dich an, um an diesem Event teilzunehmen.</p>
+                    <a href="{% url 'admin:login' %}" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-in-right"></i> Anmelden
+                    </a>
+                </div>
+            </div>
+            
+            {% else %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Anmeldung geschlossen
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">Die Anmeldung für dieses Event ist leider bereits geschlossen.</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Event Info -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-calendar-check text-primary"></i>
+                        Wichtige Termine
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Anmeldung startet:</span>
+                        <span>{{ event.registration_start|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Anmeldeschluss:</span>
+                        <span>{{ event.registration_deadline|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-bold">Event-Datum:</span>
+                        <span class="fw-bold">{{ event.event_date|date:"d.m.Y" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-graph-up text-success"></i>
+                        Anmeldestatus
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% widthratio event.team_registrations.count event.max_teams 100 as progress_percentage %}
+                    <div class="text-center mb-3">
+                        <div class="fs-2 fw-bold text-primary">{{ event.team_registrations.count }}</div>
+                        <div class="text-muted">von {{ event.max_teams }} Teams</div>
+                    </div>
+                    
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar {% if progress_percentage >= 90 %}bg-danger{% elif progress_percentage >= 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                             role="progressbar" style="width: {{ progress_percentage }}%"></div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <small class="text-muted">{{ progress_percentage }}% belegt</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

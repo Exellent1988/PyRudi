@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% block title %}Profil bearbeiten - Running Dinner{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Profil bearbeiten</li>
+                </ol>
+            </nav>
+
+            <!-- Header -->
+            <div class="text-center mb-4">
+                <h1 class="display-6 fw-bold">
+                    <i class="bi bi-person-gear text-primary"></i>
+                    Profil bearbeiten
+                </h1>
+                <p class="lead text-muted">
+                    Aktualisiere deine persönlichen Daten und Ernährungseinschränkungen
+                </p>
+            </div>
+
+            <!-- Profile Form -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person-lines-fill"></i>
+                        Persönliche Informationen
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label for="first_name" class="form-label fw-bold">
+                                    <i class="bi bi-person text-primary"></i>
+                                    Vorname *
+                                </label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" 
+                                       value="{{ user.first_name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="last_name" class="form-label fw-bold">
+                                    <i class="bi bi-person text-primary"></i>
+                                    Nachname *
+                                </label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" 
+                                       value="{{ user.last_name }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label for="phone_number" class="form-label fw-bold">
+                                    <i class="bi bi-telephone text-success"></i>
+                                    Telefonnummer
+                                </label>
+                                <input type="tel" class="form-control" id="phone_number" name="phone_number" 
+                                       value="{{ user.phone_number|default:'' }}" 
+                                       placeholder="+49 123 456789">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="date_of_birth" class="form-label fw-bold">
+                                    <i class="bi bi-calendar text-info"></i>
+                                    Geburtsdatum
+                                </label>
+                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" 
+                                       value="{{ user.date_of_birth|date:'Y-m-d'|default:'' }}">
+                            </div>
+                        </div>
+
+                        <!-- Emergency Contact -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-shield-check text-warning"></i>
+                                    Notfallkontakt
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="emergency_contact" class="form-label">Name</label>
+                                        <input type="text" class="form-control" id="emergency_contact" 
+                                               name="emergency_contact" value="{{ user.emergency_contact|default:'' }}" 
+                                               placeholder="Max Mustermann">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="emergency_phone" class="form-label">Telefon</label>
+                                        <input type="tel" class="form-control" id="emergency_phone" 
+                                               name="emergency_phone" value="{{ user.emergency_phone|default:'' }}" 
+                                               placeholder="+49 123 456789">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dietary Restrictions -->
+                        <div class="card border-warning mb-4">
+                            <div class="card-header bg-warning text-dark py-3">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-heart-pulse"></i>
+                                    Ernährungseinschränkungen & Allergien
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Structured Allergies -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Bekannte Allergien & Diäten wählen:</label>
+                                    <div class="row g-3">
+                                        {% regroup all_restrictions by category as restrictions_by_category %}
+                                        {% for category in restrictions_by_category %}
+                                        <div class="col-lg-6">
+                                            <h6 class="fw-bold text-muted mb-2">
+                                                {% if category.grouper == 'allergy' %}
+                                                <i class="bi bi-exclamation-triangle text-danger"></i> Allergien
+                                                {% elif category.grouper == 'intolerance' %}
+                                                <i class="bi bi-info-circle text-warning"></i> Unverträglichkeiten
+                                                {% elif category.grouper == 'diet' %}
+                                                <i class="bi bi-heart text-success"></i> Diät/Lebensstil
+                                                {% elif category.grouper == 'religion' %}
+                                                <i class="bi bi-star text-primary"></i> Religiöse Einschränkungen
+                                                {% endif %}
+                                            </h6>
+                                            {% for restriction in category.list %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       name="dietary_restrictions_structured" 
+                                                       value="{{ restriction.id }}" 
+                                                       id="restriction_{{ restriction.id }}"
+                                                       {% if restriction in user_restrictions %}checked{% endif %}>
+                                                <label class="form-check-label" for="restriction_{{ restriction.id }}">
+                                                    {{ restriction.name }}
+                                                    {% if restriction.is_critical %}
+                                                    <span class="badge bg-danger ms-1">Kritisch</span>
+                                                    {% endif %}
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <!-- Additional Notes -->
+                                <div class="mb-3">
+                                    <label for="dietary_restrictions" class="form-label fw-bold">
+                                        Zusätzliche Hinweise:
+                                    </label>
+                                    <textarea class="form-control" id="dietary_restrictions" 
+                                              name="dietary_restrictions" rows="3" 
+                                              placeholder="Weitere Details zu deinen Allergien oder Diäteinschränkungen...">{{ user.dietary_restrictions }}</textarea>
+                                    <div class="form-text">
+                                        Hier kannst du spezielle Hinweise eintragen, die nicht in der Liste oben stehen.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex gap-3 justify-content-end">
+                            <a href="{% url 'accounts:dashboard' %}" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-arrow-left"></i> Zurück
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Profil speichern
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-light border-0 py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        Warum sind diese Informationen wichtig?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4 text-center">
+                            <div class="bg-danger bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                                <i class="bi bi-shield-exclamation text-danger fs-4"></i>
+                            </div>
+                            <h6>Sicherheit</h6>
+                            <small class="text-muted">Organisatoren wissen über kritische Allergien Bescheid</small>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                                <i class="bi bi-people text-success fs-4"></i>
+                            </div>
+                            <h6>Team-Matching</h6>
+                            <small class="text-muted">Bessere Zuordnung mit kompatiblen Teams</small>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                                <i class="bi bi-chat-heart text-warning fs-4"></i>
+                            </div>
+                            <h6>Kommunikation</h6>
+                            <small class="text-muted">Gastgeber können sich besser vorbereiten</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

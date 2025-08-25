@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ team.name }} - Running Dinner{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">{{ team.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Team Header -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h1 class="display-6 fw-bold mb-2">{{ team.name }}</h1>
+                            {% if team.description %}
+                            <p class="lead text-muted">{{ team.description }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            {% if team.is_active %}
+                            <span class="badge bg-success fs-6">Aktiv</span>
+                            {% else %}
+                            <span class="badge bg-secondary fs-6">Inaktiv</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-people-fill text-primary me-2"></i>
+                                <span>{{ team.member_count }} von {{ team.max_members }} Mitgliedern</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-person-fill text-info me-2"></i>
+                                <span>Leader: {{ team.contact_person.full_name|default:team.contact_person.username }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-house-fill text-success me-2"></i>
+                                <span>Bis zu {{ team.max_guests }} Gäste</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-calendar-plus text-warning me-2"></i>
+                                <span>Erstellt: {{ team.created_at|date:"d.m.Y" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Members -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-people text-primary"></i>
+                            Team-Mitglieder
+                        </h5>
+                        <span class="badge bg-primary">{{ team_members.count }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if team_members %}
+                    <div class="row g-3">
+                        {% for membership in team_members %}
+                        <div class="col-md-6">
+                            <div class="card border">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            {% if membership.user.profile_picture %}
+                                            <img src="{{ membership.user.profile_picture.url }}" alt="Profilbild" 
+                                                 class="rounded-circle" width="50" height="50">
+                                            {% else %}
+                                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
+                                                 style="width: 50px; height: 50px;">
+                                                <i class="bi bi-person-fill text-white"></i>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ membership.user.full_name|default:membership.user.username }}</h6>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">{{ membership.user.email }}</small>
+                                                {% if membership.role == 'leader' %}
+                                                <span class="badge bg-warning">Leader</span>
+                                                {% elif membership.role == 'member' %}
+                                                <span class="badge bg-primary">Mitglied</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">{{ membership.get_role_display }}</span>
+                                                {% endif %}
+                                            </div>
+                                            {% if membership.user.dietary_restrictions %}
+                                            <small class="text-danger">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                {{ membership.user.dietary_restrictions|truncatechars:30 }}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                        <h6 class="mt-3 text-muted">Keine Mitglieder</h6>
+                        <p class="text-muted">Dieses Team hat noch keine Mitglieder.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Pending Invitations -->
+            {% if pending_invitations %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-warning bg-opacity-10 border-0 py-3">
+                    <h5 class="card-title mb-0 text-warning">
+                        <i class="bi bi-envelope"></i>
+                        Offene Einladungen
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for invitation in pending_invitations %}
+                    <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-2">
+                        <div>
+                            <h6 class="mb-1">{{ invitation.email }}</h6>
+                            <small class="text-muted">
+                                Eingeladen von {{ invitation.invited_by.full_name|default:invitation.invited_by.username }} 
+                                am {{ invitation.created_at|date:"d.m.Y" }}
+                            </small>
+                            {% if invitation.message %}
+                            <br><small class="text-muted">"{{ invitation.message }}"</small>
+                            {% endif %}
+                        </div>
+                        <span class="badge bg-warning">Ausstehend</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Team Address & Details -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-house text-primary"></i>
+                        Team-Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-2">Hausadresse</h6>
+                            <p class="text-muted">{{ team.home_address }}</p>
+                        </div>
+                        
+                        {% if team.cooking_preferences %}
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-2">Koch-Präferenzen</h6>
+                            <p class="text-muted">{{ team.cooking_preferences }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if team.kitchen_equipment %}
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-2">Küchenausstattung</h6>
+                            <p class="text-muted">{{ team.kitchen_equipment }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if team.accessibility_notes %}
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-2">Barrierefreiheit</h6>
+                            <p class="text-muted">{{ team.accessibility_notes }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            {% if membership %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightning"></i>
+                        Aktionen
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if membership.role == 'leader' %}
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#inviteModal">
+                            <i class="bi bi-person-plus"></i> Mitglied einladen
+                        </button>
+                        <button class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Team bearbeiten
+                        </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'events:event_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-calendar-event"></i> Events suchen
+                        </a>
+                        
+                        {% if membership.role != 'leader' %}
+                        <button class="btn btn-outline-danger" onclick="confirmLeave()">
+                            <i class="bi bi-box-arrow-left"></i> Team verlassen
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Team Stats -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-graph-up text-success"></i>
+                        Team-Statistiken
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 text-center">
+                        <div class="col-6">
+                            <div class="bg-primary bg-opacity-10 rounded p-3">
+                                <div class="fs-4 fw-bold text-primary">{{ team.member_count }}</div>
+                                <small class="text-muted">Mitglieder</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-success bg-opacity-10 rounded p-3">
+                                <div class="fs-4 fw-bold text-success">{{ team.event_registrations.count }}</div>
+                                <small class="text-muted">Events</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Full Status -->
+            {% if team.is_full %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>Team ist voll!</strong><br>
+                Das Team hat die maximale Anzahl von {{ team.max_members }} Mitgliedern erreicht.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Invite Modal -->
+{% if membership and membership.role == 'leader' %}
+<div class="modal fade" id="inviteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mitglied einladen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="#">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">E-Mail Adresse</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Persönliche Nachricht (optional)</label>
+                        <textarea class="form-control" id="message" name="message" rows="3" 
+                                  placeholder="Hallo! Ich würde dich gerne in unser Running Dinner Team einladen..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Einladung senden</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function confirmLeave() {
+    if (confirm('Möchten Sie das Team wirklich verlassen?')) {
+        // Team verlassen Logic hier
+        window.location.href = "{% url 'accounts:dashboard' %}";
+    }
+}
+</script>
+{% endblock %}

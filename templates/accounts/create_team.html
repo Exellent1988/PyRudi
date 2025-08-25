@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block title %}Team erstellen - Running Dinner{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Team erstellen</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-5 fw-bold">Neues Team erstellen</h1>
+                <p class="lead text-muted">
+                    Erstelle ein Team für Running Dinner Events und lade Freunde ein, sich dir anzuschließen.
+                </p>
+            </div>
+
+            <!-- Create Team Form -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-people-fill"></i>
+                        Team-Informationen
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Team Name -->
+                        <div class="mb-4">
+                            <label for="name" class="form-label fw-bold">
+                                <i class="bi bi-tag text-primary"></i>
+                                Team-Name *
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="name" name="name" 
+                                   placeholder="z.B. Die Küchenchefs, Genuss-Entdecker, ..." required>
+                            <div class="form-text">
+                                Wähle einen einprägsamen Namen für dein Team (max. 100 Zeichen).
+                            </div>
+                        </div>
+
+                        <!-- Team Description -->
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold">
+                                <i class="bi bi-card-text text-success"></i>
+                                Team-Beschreibung
+                            </label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                      placeholder="Beschreibe euer Team: Was macht ihr gerne? Welche Küche bevorzugt ihr? Was ist euer Motto?"></textarea>
+                            <div class="form-text">
+                                Erzähle anderen Teams etwas über euch (optional).
+                            </div>
+                        </div>
+
+                        <!-- Home Address -->
+                        <div class="mb-4">
+                            <label for="home_address" class="form-label fw-bold">
+                                <i class="bi bi-house text-warning"></i>
+                                Hausadresse *
+                            </label>
+                            <textarea class="form-control" id="home_address" name="home_address" rows="2" 
+                                      placeholder="Straße, Hausnummer&#10;PLZ Stadt" required></textarea>
+                            <div class="form-text">
+                                Die Adresse wo ihr kocht und Gäste empfangt. Diese wird für die Routenplanung verwendet.
+                            </div>
+                        </div>
+
+                        <div class="row g-4 mb-4">
+                            <!-- Max Guests -->
+                            <div class="col-md-6">
+                                <label for="max_guests" class="form-label fw-bold">
+                                    <i class="bi bi-people text-info"></i>
+                                    Maximale Gäste
+                                </label>
+                                <select class="form-select" id="max_guests" name="max_guests">
+                                    <option value="4">4 Gäste</option>
+                                    <option value="6" selected>6 Gäste</option>
+                                    <option value="8">8 Gäste</option>
+                                    <option value="10">10 Gäste</option>
+                                    <option value="12">12 Gäste</option>
+                                </select>
+                                <div class="form-text">
+                                    Wie viele Gäste könnt ihr maximal bewirten?
+                                </div>
+                            </div>
+
+                            <!-- Team Size -->
+                            <div class="col-md-6">
+                                <label for="max_members" class="form-label fw-bold">
+                                    <i class="bi bi-person-plus text-secondary"></i>
+                                    Team-Größe
+                                </label>
+                                <select class="form-select" id="max_members" name="max_members">
+                                    <option value="2" selected>2 Personen</option>
+                                    <option value="3">3 Personen</option>
+                                    <option value="4">4 Personen</option>
+                                </select>
+                                <div class="form-text">
+                                    Wie viele Personen soll euer Team haben?
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cooking Preferences -->
+                        <div class="mb-4">
+                            <label for="cooking_preferences" class="form-label fw-bold">
+                                <i class="bi bi-emoji-heart-eyes text-danger"></i>
+                                Koch-Präferenzen
+                            </label>
+                            <textarea class="form-control" id="cooking_preferences" name="cooking_preferences" rows="2"
+                                      placeholder="z.B. Italienische Küche, Vegetarisch, Asiatisch, Experimentell, ..."></textarea>
+                            <div class="form-text">
+                                Welche Küche kocht ihr gerne? (optional)
+                            </div>
+                        </div>
+
+                        <!-- Kitchen Equipment -->
+                        <div class="mb-4">
+                            <label for="kitchen_equipment" class="form-label fw-bold">
+                                <i class="bi bi-tools text-dark"></i>
+                                Küchenausstattung
+                            </label>
+                            <textarea class="form-control" id="kitchen_equipment" name="kitchen_equipment" rows="2"
+                                      placeholder="z.B. Induktionsherd, großer Ofen, Mixer, Thermomix, ..."></textarea>
+                            <div class="form-text">
+                                Welche besonderen Küchengeräte habt ihr? (optional)
+                            </div>
+                        </div>
+
+                        <!-- Accessibility -->
+                        <div class="mb-4">
+                            <label for="accessibility_notes" class="form-label fw-bold">
+                                <i class="bi bi-universal-access text-info"></i>
+                                Barrierefreiheit
+                            </label>
+                            <textarea class="form-control" id="accessibility_notes" name="accessibility_notes" rows="2"
+                                      placeholder="z.B. Rollstuhlgerecht, Erdgeschoss, Aufzug vorhanden, ..."></textarea>
+                            <div class="form-text">
+                                Informationen zur Barrierefreiheit eurer Wohnung (optional).
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex gap-3 justify-content-end">
+                            <a href="{% url 'accounts:dashboard' %}" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-arrow-left"></i> Zurück
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Team erstellen
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info Card -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-light border-0 py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        Was passiert als Nächstes?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4 text-center">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                                <i class="bi bi-1-circle-fill text-primary fs-4"></i>
+                            </div>
+                            <h6>Team erstellen</h6>
+                            <small class="text-muted">Du wirst automatisch Team-Leader</small>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                                <i class="bi bi-2-circle-fill text-success fs-4"></i>
+                            </div>
+                            <h6>Mitglieder einladen</h6>
+                            <small class="text-muted">Lade Freunde per E-Mail ein</small>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                                <i class="bi bi-3-circle-fill text-warning fs-4"></i>
+                            </div>
+                            <h6>Event wählen</h6>
+                            <small class="text-muted">Meldet euch für Events an</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
+{% endblock %}

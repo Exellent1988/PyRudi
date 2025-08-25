@@ -1,0 +1,833 @@
+INFO 2025-08-25 14:58:41,029 autoreload 63450 8581079232 Watching for file changes with StatReloader
+INFO 2025-08-25 14:59:06,641 autoreload 63450 8581079232 /Users/axell/Documents/Projects/RunningDinner/accounts/admin.py changed, reloading.
+INFO 2025-08-25 14:59:06,829 autoreload 63636 8581079232 Watching for file changes with StatReloader
+INFO 2025-08-25 15:35:46,245 autoreload 7538 281473725489184 Watching for file changes with StatReloader
+INFO 2025-08-25 15:36:10,105 basehttp 7538 281473565389216 "GET / HTTP/1.1" 200 114
+WARNING 2025-08-25 15:36:10,180 log 7538 281473565389216 Not Found: /favicon.ico
+WARNING 2025-08-25 15:36:10,181 basehttp 7538 281473565389216 "GET /favicon.ico HTTP/1.1" 404 3185
+INFO 2025-08-25 15:36:16,074 basehttp 7538 281473565389216 "GET /admin HTTP/1.1" 301 0
+INFO 2025-08-25 15:36:16,167 basehttp 7538 281473565389216 "GET /admin/ HTTP/1.1" 302 0
+INFO 2025-08-25 15:36:16,178 basehttp 7538 281473565389216 "GET /admin/login/?next=/admin/ HTTP/1.1" 200 4227
+INFO 2025-08-25 15:36:16,253 basehttp 7538 281473565389216 "GET /static/admin/css/base.css HTTP/1.1" 200 22120
+INFO 2025-08-25 15:36:16,297 basehttp 7538 281473565389216 "GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+INFO 2025-08-25 15:36:16,346 basehttp 7538 281473533931936 "GET /static/admin/css/login.css HTTP/1.1" 200 951
+INFO 2025-08-25 15:36:16,347 basehttp 7538 281473554903456 "GET /static/admin/css/responsive.css HTTP/1.1" 200 16565
+INFO 2025-08-25 15:36:16,348 basehttp 7538 281473523446176 "GET /static/admin/css/dark_mode.css HTTP/1.1" 200 2808
+INFO 2025-08-25 15:36:16,352 basehttp 7538 281473523446176 "GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+INFO 2025-08-25 15:36:16,385 basehttp 7538 281473544417696 "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+INFO 2025-08-25 15:36:33,514 basehttp 7538 281473523446176 "POST /admin/login/?next=/admin/ HTTP/1.1" 302 0
+INFO 2025-08-25 15:36:33,533 basehttp 7538 281473523446176 "GET /admin/ HTTP/1.1" 200 16878
+INFO 2025-08-25 15:36:33,607 basehttp 7538 281473523446176 "GET /static/admin/css/dashboard.css HTTP/1.1" 200 441
+INFO 2025-08-25 15:36:33,619 basehttp 7538 281473554903456 "GET /static/admin/img/icon-changelink.svg HTTP/1.1" 200 380
+INFO 2025-08-25 15:36:33,619 basehttp 7538 281473544417696 "GET /static/admin/img/icon-addlink.svg HTTP/1.1" 200 331
+ERROR 2025-08-25 15:36:40,176 log 7538 281473523446176 Internal Server Error: /admin/accounts/customuser/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/options.py", line 719, in wrapper
+    return self.admin_site.admin_view(view)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 192, in _view_wrapper
+    result = _process_exception(request, e)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 190, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/views/decorators/cache.py", line 80, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/sites.py", line 246, in inner
+    return view(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 192, in _view_wrapper
+    result = _process_exception(request, e)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 190, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/options.py", line 2163, in changelist_view
+    "selection_note": _("0 of %(cnt)s selected") % {"cnt": len(cl.result_list)},
+                                                           ^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 366, in __len__
+    self._fetch_all()
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 1951, in _fetch_all
+    self._prefetch_related_objects()
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 1328, in _prefetch_related_objects
+    prefetch_related_objects(self._result_cache, *self._prefetch_related_lookups)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 2372, in prefetch_related_objects
+    raise AttributeError(
+AttributeError: Cannot find 'team_memberships' on CustomUser object, 'team_memberships' is an invalid parameter to prefetch_related()
+ERROR 2025-08-25 15:36:40,178 basehttp 7538 281473523446176 "GET /admin/accounts/customuser/ HTTP/1.1" 500 131666
+INFO 2025-08-25 15:36:41,685 basehttp 7538 281473523446176 "GET /admin/ HTTP/1.1" 200 16878
+INFO 2025-08-25 15:36:42,662 basehttp 7538 281473523446176 "GET /admin/accounts/teaminvitation/ HTTP/1.1" 200 18505
+INFO 2025-08-25 15:36:42,692 basehttp 7538 281473533931936 "GET /static/admin/js/jquery.init.js HTTP/1.1" 200 347
+INFO 2025-08-25 15:36:42,693 basehttp 7538 281473523446176 "GET /static/admin/css/changelists.css HTTP/1.1" 200 6878
+INFO 2025-08-25 15:36:42,695 basehttp 7538 281473565389216 "GET /static/admin/js/core.js HTTP/1.1" 200 6208
+INFO 2025-08-25 15:36:42,698 basehttp 7538 281473533931936 "GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 200 9777
+INFO 2025-08-25 15:36:42,701 basehttp 7538 281473565389216 "GET /static/admin/js/actions.js HTTP/1.1" 200 8076
+INFO 2025-08-25 15:36:42,703 basehttp 7538 281473544417696 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:36:42,703 basehttp 7538 281473554903456 "GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 200 285314
+INFO 2025-08-25 15:36:42,707 basehttp 7538 281473544417696 "GET /static/admin/js/urlify.js HTTP/1.1" 200 7887
+INFO 2025-08-25 15:36:42,708 basehttp 7538 281473554903456 "GET /static/admin/js/prepopulate.js HTTP/1.1" 200 1531
+INFO 2025-08-25 15:36:42,737 basehttp 7538 281473523446176 "GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 200 325171
+INFO 2025-08-25 15:36:42,745 basehttp 7538 281473533931936 "GET /static/admin/img/search.svg HTTP/1.1" 200 458
+INFO 2025-08-25 15:36:42,783 basehttp 7538 281473523446176 "GET /static/admin/js/filters.js HTTP/1.1" 200 978
+INFO 2025-08-25 15:36:42,793 basehttp 7538 281473533931936 "GET /static/admin/img/tooltag-add.svg HTTP/1.1" 200 331
+INFO 2025-08-25 15:36:42,793 basehttp 7538 281473544417696 "GET /static/admin/img/icon-viewlink.svg HTTP/1.1" 200 581
+INFO 2025-08-25 15:36:43,879 basehttp 7538 281473533931936 "GET /admin/ HTTP/1.1" 200 16878
+INFO 2025-08-25 15:36:44,708 basehttp 7538 281473533931936 "GET /admin/accounts/teammembership/ HTTP/1.1" 200 17943
+INFO 2025-08-25 15:36:44,735 basehttp 7538 281473533931936 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:36:45,573 basehttp 7538 281473533931936 "GET /admin/ HTTP/1.1" 200 16878
+INFO 2025-08-25 15:36:46,469 basehttp 7538 281473533931936 "GET /admin/auth/group/ HTTP/1.1" 200 16034
+INFO 2025-08-25 15:36:46,499 basehttp 7538 281473533931936 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:36:47,127 basehttp 7538 281473533931936 "GET /admin/ HTTP/1.1" 200 16878
+INFO 2025-08-25 15:37:10,595 basehttp 7538 281473533931936 "GET / HTTP/1.1" 200 114
+INFO 2025-08-25 15:37:20,503 basehttp 7538 281473533931936 "GET /api HTTP/1.1" 301 0
+ERROR 2025-08-25 15:37:20,530 log 7538 281473523446176 Internal Server Error: /api/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/RunningDinner/events/views.py", line 136, in event_list
+    return render(request, 'events/event_list.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 19, in get_template
+    raise TemplateDoesNotExist(template_name, chain=chain)
+django.template.exceptions.TemplateDoesNotExist: events/event_list.html
+ERROR 2025-08-25 15:37:20,531 basehttp 7538 281473523446176 "GET /api/ HTTP/1.1" 500 83342
+INFO 2025-08-25 15:37:57,496 autoreload 7538 281473725489184 /workspaces/RunningDinner/running_dinner_app/urls.py changed, reloading.
+INFO 2025-08-25 15:37:57,738 autoreload 8766 281473747759136 Watching for file changes with StatReloader
+INFO 2025-08-25 15:38:03,927 autoreload 8766 281473747759136 /workspaces/RunningDinner/running_dinner_app/settings.py changed, reloading.
+INFO 2025-08-25 15:38:04,133 autoreload 8860 281473717137440 Watching for file changes with StatReloader
+INFO 2025-08-25 15:38:28,625 autoreload 8860 281473717137440 /workspaces/RunningDinner/optimization/models.py changed, reloading.
+INFO 2025-08-25 15:38:28,934 autoreload 9029 281473500528672 Watching for file changes with StatReloader
+INFO 2025-08-25 15:38:47,038 basehttp 9029 281473345188256 "GET / HTTP/1.1" 200 17656
+INFO 2025-08-25 15:39:04,016 basehttp 9029 281473345188256 "GET /api/accounts/dashboard/ HTTP/1.1" 200 9970
+INFO 2025-08-25 15:39:17,480 basehttp 9029 281473345188256 "GET /api/events/ HTTP/1.1" 200 7525
+INFO 2025-08-25 15:39:25,255 basehttp 9029 281473345188256 "GET /api/events/ HTTP/1.1" 200 7525
+INFO 2025-08-25 15:39:34,674 basehttp 9029 281473345188256 "GET /api/events/ HTTP/1.1" 200 7525
+INFO 2025-08-25 15:39:35,806 basehttp 9029 281473345188256 "GET /api/accounts/dashboard/ HTTP/1.1" 200 9970
+INFO 2025-08-25 15:39:57,969 basehttp 9029 281473345188256 "GET / HTTP/1.1" 200 17656
+INFO 2025-08-25 15:40:24,008 basehttp 9029 281473345188256 "GET /api/events/ HTTP/1.1" 200 7525
+INFO 2025-08-25 15:40:37,051 basehttp 9029 281473345188256 "GET /admin/ HTTP/1.1" 200 16878
+INFO 2025-08-25 15:40:37,074 basehttp 9029 281473345188256 "GET /static/admin/js/theme.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:37,121 basehttp 9029 281473345188256 "GET /static/admin/css/responsive.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:37,193 basehttp 9029 281473324216736 "GET /static/admin/css/dashboard.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:37,193 basehttp 9029 281473334702496 "GET /static/admin/css/dark_mode.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:37,195 basehttp 9029 281473313730976 "GET /static/admin/css/base.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:37,195 basehttp 9029 281473229844896 "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:37,200 basehttp 9029 281473229844896 "GET /static/admin/js/nav_sidebar.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,268 basehttp 9029 281473229844896 "GET /admin/events/event/ HTTP/1.1" 200 19062
+INFO 2025-08-25 15:40:39,297 basehttp 9029 281473345188256 "GET /static/admin/js/core.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,297 basehttp 9029 281473313730976 "GET /static/admin/css/changelists.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,299 basehttp 9029 281473324216736 "GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,300 basehttp 9029 281473334702496 "GET /static/admin/js/jquery.init.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,304 basehttp 9029 281473313730976 "GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,304 basehttp 9029 281473324216736 "GET /static/admin/js/urlify.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,304 basehttp 9029 281473345188256 "GET /static/admin/js/actions.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,306 basehttp 9029 281473334702496 "GET /static/admin/js/prepopulate.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,308 basehttp 9029 281473229844896 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:40:39,348 basehttp 9029 281473313730976 "GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,349 basehttp 9029 281473324216736 "GET /static/admin/img/search.svg HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,394 basehttp 9029 281473324216736 "GET /static/admin/js/filters.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,399 basehttp 9029 281473313730976 "GET /static/admin/img/icon-addlink.svg HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,400 basehttp 9029 281473229844896 "GET /static/admin/img/tooltag-add.svg HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:39,401 basehttp 9029 281473334702496 "GET /static/admin/img/icon-viewlink.svg HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:41,633 basehttp 9029 281473313730976 "GET /admin/events/event/add/ HTTP/1.1" 200 37889
+INFO 2025-08-25 15:40:41,661 basehttp 9029 281473334702496 "GET /static/admin/js/calendar.js HTTP/1.1" 200 9141
+INFO 2025-08-25 15:40:41,662 basehttp 9029 281473229844896 "GET /static/admin/js/admin/DateTimeShortcuts.js HTTP/1.1" 200 19319
+INFO 2025-08-25 15:40:41,662 basehttp 9029 281473345188256 "GET /static/admin/js/inlines.js HTTP/1.1" 200 15628
+INFO 2025-08-25 15:40:41,662 basehttp 9029 281473313730976 "GET /static/admin/css/forms.css HTTP/1.1" 200 8525
+INFO 2025-08-25 15:40:41,665 basehttp 9029 281473324216736 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:40:41,665 basehttp 9029 281473334702496 "GET /static/admin/js/prepopulate_init.js HTTP/1.1" 200 586
+INFO 2025-08-25 15:40:41,710 basehttp 9029 281473334702496 "GET /static/admin/css/widgets.css HTTP/1.1" 200 11991
+INFO 2025-08-25 15:40:41,710 basehttp 9029 281473313730976 "GET /static/admin/img/icon-changelink.svg HTTP/1.1" 304 0
+INFO 2025-08-25 15:40:41,756 basehttp 9029 281473313730976 "GET /static/admin/js/change_form.js HTTP/1.1" 200 606
+INFO 2025-08-25 15:40:41,757 basehttp 9029 281473334702496 "GET /static/admin/img/icon-unknown.svg HTTP/1.1" 200 655
+INFO 2025-08-25 15:40:41,811 basehttp 9029 281473313730976 "GET /static/admin/img/icon-calendar.svg HTTP/1.1" 200 1086
+INFO 2025-08-25 15:40:41,811 basehttp 9029 281473334702496 "GET /static/admin/img/icon-clock.svg HTTP/1.1" 200 677
+INFO 2025-08-25 15:40:45,572 basehttp 9029 281473334702496 "GET /static/admin/img/calendar-icons.svg HTTP/1.1" 200 2455
+INFO 2025-08-25 15:41:33,957 basehttp 9029 281473334702496 "POST /admin/events/event/add/ HTTP/1.1" 200 38879
+INFO 2025-08-25 15:41:33,988 basehttp 9029 281473334702496 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:41:46,473 basehttp 9029 281473334702496 "GET /admin/accounts/customuser/add/?_to_field=id&_popup=1 HTTP/1.1" 200 8799
+INFO 2025-08-25 15:41:46,488 basehttp 9029 281473313730976 "GET /static/admin/css/unusable_password_field.css HTTP/1.1" 200 663
+INFO 2025-08-25 15:41:46,492 basehttp 9029 281473334702496 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:41:46,493 basehttp 9029 281473313730976 "GET /static/admin/js/unusable_password_field.js HTTP/1.1" 200 1480
+INFO 2025-08-25 15:42:00,837 basehttp 9029 281473313730976 "POST /admin/events/event/add/ HTTP/1.1" 200 38596
+INFO 2025-08-25 15:42:00,875 basehttp 9029 281473313730976 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:42:15,110 basehttp 9029 281473313730976 "POST /admin/events/event/add/ HTTP/1.1" 200 38448
+INFO 2025-08-25 15:42:15,132 basehttp 9029 281473313730976 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:42:27,349 basehttp 9029 281473313730976 "POST /admin/events/event/add/ HTTP/1.1" 302 0
+INFO 2025-08-25 15:42:27,370 basehttp 9029 281473313730976 "GET /admin/events/event/1/change/ HTTP/1.1" 200 38679
+INFO 2025-08-25 15:42:27,450 basehttp 9029 281473313730976 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:42:27,504 basehttp 9029 281473313730976 "GET /static/admin/img/icon-yes.svg HTTP/1.1" 200 436
+INFO 2025-08-25 15:42:32,554 basehttp 9029 281473313730976 "GET /admin/events/event/1/change/ HTTP/1.1" 200 38409
+INFO 2025-08-25 15:42:32,586 basehttp 9029 281473313730976 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:42:56,072 basehttp 9029 281473313730976 "GET / HTTP/1.1" 200 17656
+INFO 2025-08-25 15:43:07,660 basehttp 9029 281473313730976 "GET /api/events/ HTTP/1.1" 200 12560
+ERROR 2025-08-25 15:43:10,503 log 9029 281473313730976 Internal Server Error: /api/events/1/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/RunningDinner/events/views.py", line 167, in event_detail
+    return render(request, 'events/event_detail.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 19, in get_template
+    raise TemplateDoesNotExist(template_name, chain=chain)
+django.template.exceptions.TemplateDoesNotExist: events/event_detail.html
+ERROR 2025-08-25 15:43:10,505 basehttp 9029 281473313730976 "GET /api/events/1/ HTTP/1.1" 500 84209
+ERROR 2025-08-25 15:44:17,969 log 9029 281473313730976 Internal Server Error: /api/events/1/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/RunningDinner/events/views.py", line 167, in event_detail
+    return render(request, 'events/event_detail.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 19, in get_template
+    raise TemplateDoesNotExist(template_name, chain=chain)
+django.template.exceptions.TemplateDoesNotExist: events/event_detail.html
+ERROR 2025-08-25 15:44:17,969 basehttp 9029 281473313730976 "GET /api/events/1/ HTTP/1.1" 500 84209
+INFO 2025-08-25 15:44:46,263 basehttp 9029 281473313730976 "GET / HTTP/1.1" 200 17656
+INFO 2025-08-25 15:45:51,382 basehttp 9029 281473313730976 "GET /api/events/ HTTP/1.1" 200 12560
+INFO 2025-08-25 15:46:24,534 autoreload 9029 281473500528672 /workspaces/RunningDinner/running_dinner_app/urls.py changed, reloading.
+INFO 2025-08-25 15:46:24,799 autoreload 12563 281473332510752 Watching for file changes with StatReloader
+INFO 2025-08-25 15:46:32,022 autoreload 12563 281473332510752 /workspaces/RunningDinner/running_dinner_app/urls.py changed, reloading.
+INFO 2025-08-25 15:46:32,226 autoreload 12664 281473558724640 Watching for file changes with StatReloader
+INFO 2025-08-25 15:47:03,931 autoreload 12664 281473558724640 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 15:47:04,147 autoreload 12913 281472974135328 Watching for file changes with StatReloader
+INFO 2025-08-25 15:47:11,349 autoreload 12913 281472974135328 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 15:47:11,554 autoreload 12972 281473396109344 Watching for file changes with StatReloader
+INFO 2025-08-25 15:47:17,757 autoreload 12972 281473396109344 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 15:47:18,012 autoreload 13027 281473326383136 Watching for file changes with StatReloader
+INFO 2025-08-25 15:47:42,386 basehttp 13027 281473162736032 "GET /api/events/ HTTP/1.1" 200 12939
+INFO 2025-08-25 15:47:55,732 basehttp 13027 281473162736032 "GET /accounts/dashboard/ HTTP/1.1" 200 9938
+INFO 2025-08-25 15:47:57,865 basehttp 13027 281473162736032 "GET /accounts/team/create/ HTTP/1.1" 200 16429
+INFO 2025-08-25 15:48:29,536 basehttp 13027 281473152250272 "GET / HTTP/1.1" 200 14727
+INFO 2025-08-25 15:48:35,716 basehttp 13027 281473152250272 "GET /events/ HTTP/1.1" 200 11876
+INFO 2025-08-25 15:48:56,985 autoreload 13027 281473326383136 /workspaces/RunningDinner/running_dinner_app/urls.py changed, reloading.
+INFO 2025-08-25 15:48:57,181 autoreload 13904 281472963596320 Watching for file changes with StatReloader
+INFO 2025-08-25 15:48:59,363 autoreload 13904 281472963596320 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 15:48:59,555 autoreload 13980 281473020305440 Watching for file changes with StatReloader
+INFO 2025-08-25 15:50:29,409 autoreload 13980 281473020305440 /workspaces/RunningDinner/accounts/models.py changed, reloading.
+INFO 2025-08-25 15:50:29,640 autoreload 14517 281473197400096 Watching for file changes with StatReloader
+INFO 2025-08-25 15:50:38,899 autoreload 14517 281473197400096 /workspaces/RunningDinner/accounts/models.py changed, reloading.
+INFO 2025-08-25 15:50:39,124 autoreload 14652 281473544392736 Watching for file changes with StatReloader
+INFO 2025-08-25 15:50:42,237 basehttp 14652 281473456337312 "GET /accounts/dashboard/ HTTP/1.1" 200 9938
+INFO 2025-08-25 15:50:50,427 autoreload 14652 281473544392736 /workspaces/RunningDinner/accounts/models.py changed, reloading.
+INFO 2025-08-25 15:50:50,642 autoreload 14736 281473468866592 Watching for file changes with StatReloader
+INFO 2025-08-25 15:51:08,052 autoreload 14736 281473468866592 /workspaces/RunningDinner/accounts/models.py changed, reloading.
+INFO 2025-08-25 15:51:08,251 autoreload 14904 281473111978016 Watching for file changes with StatReloader
+ERROR 2025-08-25 15:51:34,077 log 14904 281472957215136 Internal Server Error: /admin/accounts/customuser/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/options.py", line 719, in wrapper
+    return self.admin_site.admin_view(view)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 192, in _view_wrapper
+    result = _process_exception(request, e)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 190, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/views/decorators/cache.py", line 80, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/sites.py", line 246, in inner
+    return view(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 192, in _view_wrapper
+    result = _process_exception(request, e)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 190, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/options.py", line 2163, in changelist_view
+    "selection_note": _("0 of %(cnt)s selected") % {"cnt": len(cl.result_list)},
+                                                           ^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 366, in __len__
+    self._fetch_all()
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 1951, in _fetch_all
+    self._prefetch_related_objects()
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 1328, in _prefetch_related_objects
+    prefetch_related_objects(self._result_cache, *self._prefetch_related_lookups)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 2372, in prefetch_related_objects
+    raise AttributeError(
+AttributeError: Cannot find 'team_memberships' on CustomUser object, 'team_memberships' is an invalid parameter to prefetch_related()
+ERROR 2025-08-25 15:51:34,079 basehttp 14904 281472957215136 "GET /admin/accounts/customuser/ HTTP/1.1" 500 131826
+INFO 2025-08-25 15:51:37,739 basehttp 14904 281472957215136 "GET /admin/events/event/1/change/ HTTP/1.1" 200 38409
+INFO 2025-08-25 15:51:39,041 basehttp 14904 281472957215136 "GET /admin/accounts/teaminvitation/ HTTP/1.1" 200 18505
+INFO 2025-08-25 15:51:39,065 basehttp 14904 281472957215136 "GET /static/admin/css/base.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,109 basehttp 14904 281472957215136 "GET /static/admin/css/responsive.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,156 basehttp 14904 281472957215136 "GET /static/admin/css/changelists.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,165 basehttp 14904 281472944632224 "GET /static/admin/css/dark_mode.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,167 basehttp 14904 281472923660704 "GET /static/admin/js/theme.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,167 basehttp 14904 281472913174944 "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,168 basehttp 14904 281472944632224 "GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,169 basehttp 14904 281472923660704 "GET /static/admin/js/jquery.init.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,170 basehttp 14904 281472913174944 "GET /static/admin/js/core.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,171 basehttp 14904 281472934146464 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:51:39,174 basehttp 14904 281472934146464 "GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,201 basehttp 14904 281472957215136 "GET /static/admin/js/actions.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,238 basehttp 14904 281472934146464 "GET /static/admin/js/prepopulate.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,238 basehttp 14904 281472913174944 "GET /static/admin/img/search.svg HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,239 basehttp 14904 281472944632224 "GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,240 basehttp 14904 281472923660704 "GET /static/admin/js/urlify.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,285 basehttp 14904 281472923660704 "GET /static/admin/js/nav_sidebar.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,285 basehttp 14904 281472944632224 "GET /static/admin/js/filters.js HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,292 basehttp 14904 281472934146464 "GET /static/admin/img/icon-viewlink.svg HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:39,292 basehttp 14904 281472913174944 "GET /static/admin/img/tooltag-add.svg HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:40,630 basehttp 14904 281472934146464 "GET /admin/accounts/teammembership/ HTTP/1.1" 200 17943
+INFO 2025-08-25 15:51:40,652 basehttp 14904 281472934146464 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:51:41,582 basehttp 14904 281472934146464 "GET /admin/accounts/team/ HTTP/1.1" 200 17687
+INFO 2025-08-25 15:51:41,610 basehttp 14904 281472934146464 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+ERROR 2025-08-25 15:51:42,297 log 14904 281472934146464 Internal Server Error: /admin/accounts/customuser/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/options.py", line 719, in wrapper
+    return self.admin_site.admin_view(view)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 192, in _view_wrapper
+    result = _process_exception(request, e)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 190, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/views/decorators/cache.py", line 80, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/sites.py", line 246, in inner
+    return view(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 192, in _view_wrapper
+    result = _process_exception(request, e)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 190, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/options.py", line 2163, in changelist_view
+    "selection_note": _("0 of %(cnt)s selected") % {"cnt": len(cl.result_list)},
+                                                           ^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 366, in __len__
+    self._fetch_all()
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 1951, in _fetch_all
+    self._prefetch_related_objects()
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 1328, in _prefetch_related_objects
+    prefetch_related_objects(self._result_cache, *self._prefetch_related_lookups)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 2372, in prefetch_related_objects
+    raise AttributeError(
+AttributeError: Cannot find 'team_memberships' on CustomUser object, 'team_memberships' is an invalid parameter to prefetch_related()
+ERROR 2025-08-25 15:51:42,299 basehttp 14904 281472934146464 "GET /admin/accounts/customuser/ HTTP/1.1" 500 131818
+INFO 2025-08-25 15:51:42,997 autoreload 14904 281473111978016 /workspaces/RunningDinner/accounts/admin.py changed, reloading.
+INFO 2025-08-25 15:51:43,232 autoreload 15272 281472891871264 Watching for file changes with StatReloader
+INFO 2025-08-25 15:51:44,577 basehttp 15272 281472804123040 "GET /admin/accounts/teammembership/ HTTP/1.1" 200 17943
+INFO 2025-08-25 15:51:45,581 basehttp 15272 281472804123040 "GET /admin/auth/group/ HTTP/1.1" 200 16034
+INFO 2025-08-25 15:51:45,605 basehttp 15272 281472804123040 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:51:46,909 basehttp 15272 281472804123040 "GET /admin/events/event/ HTTP/1.1" 200 22527
+INFO 2025-08-25 15:51:46,936 basehttp 15272 281472804123040 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:51:46,994 basehttp 15272 281472804123040 "GET /static/admin/img/sorting-icons.svg HTTP/1.1" 200 1097
+INFO 2025-08-25 15:51:47,015 basehttp 15272 281472791540128 "GET /static/admin/img/icon-yes.svg HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:47,695 basehttp 15272 281472804123040 "GET /admin/events/course/ HTTP/1.1" 200 16110
+INFO 2025-08-25 15:51:47,715 basehttp 15272 281472791540128 "GET /static/admin/css/forms.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:47,721 basehttp 15272 281472804123040 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:51:47,721 basehttp 15272 281472791540128 "GET /static/admin/css/widgets.css HTTP/1.1" 304 0
+INFO 2025-08-25 15:51:48,855 basehttp 15272 281472804123040 "GET /admin/events/teamregistration/ HTTP/1.1" 200 19686
+INFO 2025-08-25 15:51:48,883 basehttp 15272 281472804123040 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:51:49,851 basehttp 15272 281472804123040 "GET /admin/navigation/address/ HTTP/1.1" 200 17077
+INFO 2025-08-25 15:51:49,876 basehttp 15272 281472804123040 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:51:50,493 basehttp 15272 281472804123040 "GET /admin/navigation/navigationsession/ HTTP/1.1" 200 18058
+INFO 2025-08-25 15:51:50,518 basehttp 15272 281472804123040 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:51:51,495 basehttp 15272 281472804123040 "GET /admin/navigation/route/ HTTP/1.1" 200 17391
+INFO 2025-08-25 15:51:51,521 basehttp 15272 281472804123040 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+ERROR 2025-08-25 15:51:52,401 log 15272 281472804123040 Internal Server Error: /admin/navigation/locationupdate/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/options.py", line 719, in wrapper
+    return self.admin_site.admin_view(view)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 192, in _view_wrapper
+    result = _process_exception(request, e)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 190, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/views/decorators/cache.py", line 80, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/sites.py", line 246, in inner
+    return view(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 192, in _view_wrapper
+    result = _process_exception(request, e)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/utils/decorators.py", line 190, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/options.py", line 2024, in changelist_view
+    cl = self.get_changelist_instance(request)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/options.py", line 867, in get_changelist_instance
+    return ChangeList(
+           ^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/views/main.py", line 145, in __init__
+    self.queryset = self.get_queryset(request)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/views/main.py", line 553, in get_queryset
+    new_qs = filter_spec.queryset(request, qs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/admin/filters.py", line 194, in queryset
+    return queryset.filter(q_object)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 1493, in filter
+    return self._filter_or_exclude(False, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 1505, in _filter_or_exclude
+    raise TypeError("Cannot filter a query once a slice has been taken.")
+TypeError: Cannot filter a query once a slice has been taken.
+ERROR 2025-08-25 15:51:52,403 basehttp 15272 281472804123040 "GET /admin/navigation/locationupdate/ HTTP/1.1" 500 140865
+INFO 2025-08-25 15:51:53,671 basehttp 15272 281472804123040 "GET /admin/navigation/route/ HTTP/1.1" 200 17391
+INFO 2025-08-25 15:51:54,560 autoreload 15272 281472891871264 /workspaces/RunningDinner/accounts/admin.py changed, reloading.
+INFO 2025-08-25 15:51:54,819 autoreload 15376 281473118998560 Watching for file changes with StatReloader
+INFO 2025-08-25 15:51:59,404 basehttp 15376 281472961409440 "GET /admin/optimization/optimizationconstraint/ HTTP/1.1" 200 18435
+INFO 2025-08-25 15:51:59,437 basehttp 15376 281472961409440 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:52:00,924 basehttp 15376 281472961409440 "GET /admin/optimization/optimizationrun/ HTTP/1.1" 200 18862
+INFO 2025-08-25 15:52:00,954 basehttp 15376 281472961409440 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:52:01,950 basehttp 15376 281472961409440 "GET /admin/optimization/teamassignment/ HTTP/1.1" 200 17383
+INFO 2025-08-25 15:52:01,977 basehttp 15376 281472961409440 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 15:52:02,067 autoreload 15376 281473118998560 /workspaces/RunningDinner/accounts/admin.py changed, reloading.
+INFO 2025-08-25 15:52:02,288 autoreload 15544 281472942084128 Watching for file changes with StatReloader
+INFO 2025-08-25 15:52:11,527 autoreload 15544 281472942084128 /workspaces/RunningDinner/accounts/admin.py changed, reloading.
+INFO 2025-08-25 15:52:11,732 autoreload 15595 281473771159584 Watching for file changes with StatReloader
+INFO 2025-08-25 15:52:18,984 autoreload 15595 281473771159584 /workspaces/RunningDinner/accounts/admin.py changed, reloading.
+INFO 2025-08-25 15:52:19,175 autoreload 15655 281473265664032 Watching for file changes with StatReloader
+INFO 2025-08-25 15:52:28,418 autoreload 15655 281473265664032 /workspaces/RunningDinner/accounts/admin.py changed, reloading.
+INFO 2025-08-25 15:52:28,611 autoreload 15774 281473283231776 Watching for file changes with StatReloader
+INFO 2025-08-25 15:52:35,828 autoreload 15774 281473283231776 /workspaces/RunningDinner/accounts/admin.py changed, reloading.
+INFO 2025-08-25 15:52:36,031 autoreload 15911 281473331163168 Watching for file changes with StatReloader
+INFO 2025-08-25 15:52:44,259 autoreload 15911 281473331163168 /workspaces/RunningDinner/accounts/admin.py changed, reloading.
+INFO 2025-08-25 15:52:44,522 autoreload 15958 281473137799200 Watching for file changes with StatReloader
+INFO 2025-08-25 15:55:24,148 autoreload 15958 281473137799200 /workspaces/RunningDinner/events/models.py changed, reloading.
+INFO 2025-08-25 15:55:24,409 autoreload 17083 281473098330144 Watching for file changes with StatReloader
+INFO 2025-08-25 15:55:40,828 autoreload 17083 281473098330144 /workspaces/RunningDinner/events/models.py changed, reloading.
+INFO 2025-08-25 15:55:41,096 autoreload 17282 281473758162976 Watching for file changes with StatReloader
+INFO 2025-08-25 15:55:56,464 autoreload 17282 281473758162976 /workspaces/RunningDinner/events/models.py changed, reloading.
+INFO 2025-08-25 15:55:56,666 autoreload 17377 281473634861088 Watching for file changes with StatReloader
+INFO 2025-08-25 15:56:04,889 autoreload 17377 281473634861088 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 15:56:05,083 autoreload 17529 281472950861856 Watching for file changes with StatReloader
+INFO 2025-08-25 15:56:36,723 autoreload 17529 281472950861856 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 15:56:36,919 autoreload 17824 281473059717152 Watching for file changes with StatReloader
+INFO 2025-08-25 15:56:46,173 autoreload 17824 281473059717152 /workspaces/RunningDinner/events/urls.py changed, reloading.
+INFO 2025-08-25 15:56:46,390 autoreload 17888 281472823083040 Watching for file changes with StatReloader
+INFO 2025-08-25 15:58:58,784 autoreload 17888 281472823083040 /workspaces/RunningDinner/events/models.py changed, reloading.
+INFO 2025-08-25 15:58:59,048 autoreload 18928 281473034989600 Watching for file changes with StatReloader
+INFO 2025-08-25 16:02:43,834 basehttp 18928 281472879620512 "GET /admin/optimization/teamassignment/ HTTP/1.1" 200 17383
+INFO 2025-08-25 16:02:43,887 basehttp 18928 281472879620512 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 16:02:43,934 basehttp 18928 281472879620512 "GET /static/admin/css/responsive.css HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:43,978 basehttp 18928 281472879620512 "GET /static/admin/js/theme.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:43,983 basehttp 18928 281472869134752 "GET /static/admin/css/dark_mode.css HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:43,989 basehttp 18928 281472869134752 "GET /static/admin/js/jquery.init.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:43,990 basehttp 18928 281472848163232 "GET /static/admin/css/changelists.css HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:43,991 basehttp 18928 281472760082848 "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:43,991 basehttp 18928 281472858648992 "GET /static/admin/css/base.css HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:43,994 basehttp 18928 281472760082848 "GET /static/admin/js/urlify.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:43,994 basehttp 18928 281472848163232 "GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:43,995 basehttp 18928 281472858648992 "GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:44,021 basehttp 18928 281472879620512 "GET /static/admin/js/core.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:44,031 basehttp 18928 281472869134752 "GET /static/admin/js/actions.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:44,037 basehttp 18928 281472760082848 "GET /static/admin/js/prepopulate.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:44,037 basehttp 18928 281472848163232 "GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:44,040 basehttp 18928 281472858648992 "GET /static/admin/img/search.svg HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:44,085 basehttp 18928 281472858648992 "GET /static/admin/js/nav_sidebar.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:44,085 basehttp 18928 281472848163232 "GET /static/admin/js/filters.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:44,099 basehttp 18928 281472760082848 "GET /static/admin/img/icon-addlink.svg HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:44,099 basehttp 18928 281472869134752 "GET /static/admin/img/tooltag-add.svg HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:44,101 basehttp 18928 281472879620512 "GET /static/admin/img/icon-viewlink.svg HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:49,055 basehttp 18928 281472869134752 "GET /admin/optimization/ HTTP/1.1" 200 7156
+INFO 2025-08-25 16:02:49,083 basehttp 18928 281472869134752 "GET /static/admin/css/dashboard.css HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:49,095 basehttp 18928 281472879620512 "GET /static/admin/img/icon-changelink.svg HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:51,504 basehttp 18928 281472869134752 "GET /admin/optimization/optimizationconstraint/ HTTP/1.1" 200 18435
+INFO 2025-08-25 16:02:51,545 basehttp 18928 281472869134752 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 16:02:54,110 basehttp 18928 281472869134752 "GET /admin/optimization/optimizationconstraint/add/ HTTP/1.1" 200 23901
+INFO 2025-08-25 16:02:54,171 basehttp 18928 281472879620512 "GET /static/admin/css/forms.css HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:54,174 basehttp 18928 281472760082848 "GET /static/admin/js/prepopulate_init.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:54,187 basehttp 18928 281472879620512 "GET /static/admin/css/widgets.css HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:54,187 basehttp 18928 281472760082848 "GET /static/admin/js/change_form.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:02:54,198 basehttp 18928 281472869134752 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 16:03:08,526 basehttp 18928 281472879620512 "GET /admin/optimization/ HTTP/1.1" 200 7156
+INFO 2025-08-25 16:03:09,215 basehttp 18928 281472879620512 "GET /admin/ HTTP/1.1" 200 18004
+INFO 2025-08-25 16:03:11,248 basehttp 18928 281472879620512 "GET /admin/events/event/1/change/ HTTP/1.1" 200 38929
+INFO 2025-08-25 16:03:11,272 basehttp 18928 281472760082848 "GET /static/admin/js/calendar.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:03:11,275 basehttp 18928 281472848163232 "GET /static/admin/js/inlines.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:03:11,275 basehttp 18928 281472869134752 "GET /static/admin/js/admin/DateTimeShortcuts.js HTTP/1.1" 304 0
+INFO 2025-08-25 16:03:11,281 basehttp 18928 281472879620512 "GET /admin/jsi18n/ HTTP/1.1" 200 8351
+INFO 2025-08-25 16:03:11,282 basehttp 18928 281472848163232 "GET /static/admin/img/icon-unknown.svg HTTP/1.1" 304 0
+INFO 2025-08-25 16:03:11,369 basehttp 18928 281472879620512 "GET /static/admin/img/icon-clock.svg HTTP/1.1" 304 0
+INFO 2025-08-25 16:03:11,370 basehttp 18928 281472848163232 "GET /static/admin/img/icon-calendar.svg HTTP/1.1" 304 0
+INFO 2025-08-25 16:03:20,129 basehttp 18928 281472848163232 "GET / HTTP/1.1" 200 16149
+ERROR 2025-08-25 16:03:23,486 log 18928 281472848163232 Internal Server Error: /events/organizer/dashboard/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/RunningDinner/events/views.py", line 207, in organizer_dashboard
+    all_events = (main_events | co_events).distinct().order_by('-created_at')
+                  ~~~~~~~~~~~~^~~~~~~~~~~
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 469, in __or__
+    combined.query.combine(other.query, sql.OR)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/sql/query.py", line 702, in combine
+    raise TypeError("Cannot combine a unique query with a non-unique query.")
+TypeError: Cannot combine a unique query with a non-unique query.
+ERROR 2025-08-25 16:03:23,487 basehttp 18928 281472848163232 "GET /events/organizer/dashboard/ HTTP/1.1" 500 83037
+ERROR 2025-08-25 16:03:35,467 log 18928 281472848163232 Internal Server Error: /events/organizer/dashboard/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/RunningDinner/events/views.py", line 207, in organizer_dashboard
+    all_events = (main_events | co_events).distinct().order_by('-created_at')
+                  ~~~~~~~~~~~~^~~~~~~~~~~
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 469, in __or__
+    combined.query.combine(other.query, sql.OR)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/sql/query.py", line 702, in combine
+    raise TypeError("Cannot combine a unique query with a non-unique query.")
+TypeError: Cannot combine a unique query with a non-unique query.
+ERROR 2025-08-25 16:03:35,468 basehttp 18928 281472848163232 "GET /events/organizer/dashboard/ HTTP/1.1" 500 83174
+INFO 2025-08-25 16:03:42,286 basehttp 18928 281472848163232 "GET /events/1/ HTTP/1.1" 200 16332
+INFO 2025-08-25 16:03:46,344 basehttp 18928 281472848163232 "GET /accounts/team/create/ HTTP/1.1" 200 17000
+INFO 2025-08-25 16:03:52,937 autoreload 18928 281473034989600 /workspaces/RunningDinner/events/urls.py changed, reloading.
+INFO 2025-08-25 16:03:53,204 autoreload 21168 281473438941216 Watching for file changes with StatReloader
+INFO 2025-08-25 16:04:23,853 basehttp 21168 281473284370848 "POST /accounts/team/create/ HTTP/1.1" 302 0
+INFO 2025-08-25 16:04:23,882 basehttp 21168 281473284370848 "GET /accounts/team/1/ HTTP/1.1" 200 16762
+ERROR 2025-08-25 16:05:12,060 log 21168 281473284370848 Internal Server Error: /events/organizer/dashboard/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/RunningDinner/events/views.py", line 207, in organizer_dashboard
+    all_events = (main_events | co_events).distinct().order_by('-created_at')
+                  ~~~~~~~~~~~~^~~~~~~~~~~
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/query.py", line 469, in __or__
+    combined.query.combine(other.query, sql.OR)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/db/models/sql/query.py", line 702, in combine
+    raise TypeError("Cannot combine a unique query with a non-unique query.")
+TypeError: Cannot combine a unique query with a non-unique query.
+ERROR 2025-08-25 16:05:12,062 basehttp 21168 281473284370848 "GET /events/organizer/dashboard/ HTTP/1.1" 500 83049
+INFO 2025-08-25 16:06:02,851 autoreload 21168 281473438941216 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 16:06:03,143 autoreload 22089 281473738661920 Watching for file changes with StatReloader
+INFO 2025-08-25 16:06:10,351 autoreload 22089 281473738661920 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 16:06:10,578 autoreload 22151 281473261817888 Watching for file changes with StatReloader
+INFO 2025-08-25 16:06:16,823 autoreload 22151 281473261817888 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 16:06:17,023 autoreload 22188 281473758810144 Watching for file changes with StatReloader
+INFO 2025-08-25 16:06:21,178 autoreload 22188 281473758810144 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 16:06:21,388 autoreload 22224 281473776472096 Watching for file changes with StatReloader
+INFO 2025-08-25 16:06:29,630 autoreload 22224 281473776472096 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 16:06:29,814 autoreload 22338 281473867014176 Watching for file changes with StatReloader
+INFO 2025-08-25 16:06:42,146 autoreload 22338 281473867014176 /workspaces/RunningDinner/events/admin.py changed, reloading.
+INFO 2025-08-25 16:06:42,355 autoreload 22503 281473380978720 Watching for file changes with StatReloader
+INFO 2025-08-25 16:07:28,308 autoreload 22503 281473380978720 /workspaces/RunningDinner/events/admin.py changed, reloading.
+INFO 2025-08-25 16:07:28,565 autoreload 22802 281473033941024 Watching for file changes with StatReloader
+INFO 2025-08-25 16:07:40,881 autoreload 22802 281473033941024 /workspaces/RunningDinner/accounts/views.py changed, reloading.
+INFO 2025-08-25 16:07:41,129 autoreload 22953 281473330581536 Watching for file changes with StatReloader
+INFO 2025-08-25 16:07:52,400 autoreload 22953 281473330581536 /workspaces/RunningDinner/accounts/urls.py changed, reloading.
+INFO 2025-08-25 16:07:52,652 autoreload 23020 281473718190112 Watching for file changes with StatReloader
+INFO 2025-08-25 16:07:52,871 basehttp 23020 281473563292064 "GET / HTTP/1.1" 200 16149
+ERROR 2025-08-25 16:07:57,735 log 23020 281473563292064 Internal Server Error: /events/organizer/dashboard/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 180, in translate_token
+    op = OPERATORS[token]
+         ~~~~~~~~~^^^^^^^
+KeyError: 'event.can_user_manage_event:user'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/RunningDinner/events/views.py", line 217, in organizer_dashboard
+    return render(request, 'events/organizer_dashboard.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 15, in get_template
+    return engine.get_template(template_name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/backends/django.py", line 79, in get_template
+    return Template(self.engine.get_template(template_name), self)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/engine.py", line 177, in get_template
+    template, origin = self.find_template(template_name)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/engine.py", line 159, in find_template
+    template = loader.get_template(name, skip=skip)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loaders/cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loaders/base.py", line 28, in get_template
+    return Template(
+           ^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 154, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 196, in compile_nodelist
+    nodelist = parser.parse()
+               ^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader_tags.py", line 299, in do_extends
+    nodelist = parser.parse()
+               ^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader_tags.py", line 234, in do_block
+    nodelist = parser.parse(("endblock",))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 962, in do_if
+    nodelist = parser.parse(("elif", "else", "endif"))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 862, in do_for
+    nodelist_loop = parser.parse(
+                    ^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 961, in do_if
+    condition = TemplateIfParser(parser, bits).parse()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 894, in __init__
+    super().__init__(*args, **kwargs)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 171, in __init__
+    mapped_tokens.append(self.translate_token(token))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 182, in translate_token
+    return self.create_var(token)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 897, in create_var
+    return TemplateLiteral(self.template_parser.compile_filter(value), value)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 609, in compile_filter
+    return FilterExpression(token, self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 710, in __init__
+    raise TemplateSyntaxError(
+django.template.exceptions.TemplateSyntaxError: Could not parse the remainder: ':user' from 'event.can_user_manage_event:user'
+ERROR 2025-08-25 16:07:57,737 basehttp 23020 281473563292064 "GET /events/organizer/dashboard/ HTTP/1.1" 500 272226
+INFO 2025-08-25 16:08:01,494 basehttp 23020 281473563292064 "GET /events/create/ HTTP/1.1" 200 20821
+ERROR 2025-08-25 16:09:00,619 log 23020 281473563292064 Internal Server Error: /events/organizer/dashboard/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 180, in translate_token
+    op = OPERATORS[token]
+         ~~~~~~~~~^^^^^^^
+KeyError: 'event.can_user_manage_event:user'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/RunningDinner/events/views.py", line 217, in organizer_dashboard
+    return render(request, 'events/organizer_dashboard.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 15, in get_template
+    return engine.get_template(template_name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/backends/django.py", line 79, in get_template
+    return Template(self.engine.get_template(template_name), self)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/engine.py", line 177, in get_template
+    template, origin = self.find_template(template_name)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/engine.py", line 159, in find_template
+    template = loader.get_template(name, skip=skip)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loaders/cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loaders/base.py", line 28, in get_template
+    return Template(
+           ^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 154, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 196, in compile_nodelist
+    nodelist = parser.parse()
+               ^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader_tags.py", line 299, in do_extends
+    nodelist = parser.parse()
+               ^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader_tags.py", line 234, in do_block
+    nodelist = parser.parse(("endblock",))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 962, in do_if
+    nodelist = parser.parse(("elif", "else", "endif"))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 862, in do_for
+    nodelist_loop = parser.parse(
+                    ^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 961, in do_if
+    condition = TemplateIfParser(parser, bits).parse()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 894, in __init__
+    super().__init__(*args, **kwargs)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 171, in __init__
+    mapped_tokens.append(self.translate_token(token))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 182, in translate_token
+    return self.create_var(token)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 897, in create_var
+    return TemplateLiteral(self.template_parser.compile_filter(value), value)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 609, in compile_filter
+    return FilterExpression(token, self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 710, in __init__
+    raise TemplateSyntaxError(
+django.template.exceptions.TemplateSyntaxError: Could not parse the remainder: ':user' from 'event.can_user_manage_event:user'
+ERROR 2025-08-25 16:09:00,623 basehttp 23020 281473563292064 "GET /events/organizer/dashboard/ HTTP/1.1" 500 272226
+INFO 2025-08-25 16:09:46,854 autoreload 23020 281473718190112 /workspaces/RunningDinner/events/admin.py changed, reloading.
+INFO 2025-08-25 16:09:47,151 autoreload 23971 281472874319904 Watching for file changes with StatReloader

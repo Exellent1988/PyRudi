@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ event.name }} verwalten - Running Dinner{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'events:organizer_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">{{ event.name }}</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 fw-bold">{{ event.name }}</h1>
+                    <p class="lead text-muted">Event-Management</p>
+                </div>
+                <div>
+                    <span class="badge bg-primary fs-6 me-2">{{ event.get_status_display }}</span>
+                    <span class="badge bg-secondary fs-6">{{ user_role|title }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold">{{ stats.confirmed_teams }}</h3>
+                    <small>Bestätigte Teams</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold">{{ stats.pending_teams }}</h3>
+                    <small>Wartende Teams</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-info text-white">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold">{{ stats.total_participants }}</h3>
+                    <small>Teilnehmer</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm {% if stats.critical_allergies_count > 0 %}bg-danger text-white{% else %}bg-secondary text-white{% endif %}">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold">{{ stats.critical_allergies_count }}</h3>
+                    <small>Kritische Allergien</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Anmelde-Fortschritt</h6>
+                        <span class="text-muted">{{ stats.confirmed_teams }} / {{ event.max_teams }} Teams</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: {{ stats.registration_progress }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Team Registrations -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-people text-primary"></i>
+                        Team-Anmeldungen
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if registrations %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Team</th>
+                                    <th>Mitglieder</th>
+                                    <th>Status</th>
+                                    <th>Allergien</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for registration in registrations %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <h6 class="mb-1">{{ registration.team.name }}</h6>
+                                            <small class="text-muted">
+                                                Angemeldet: {{ registration.registered_at|date:"d.m.Y H:i" }}
+                                            </small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold">{{ registration.team.member_count }}</span> Personen
+                                        {% if registration.team.member_count < registration.team.max_members %}
+                                        <br><small class="text-warning">⚠️ Nicht vollständig</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if registration.status == 'confirmed' %}
+                                        <span class="badge bg-success">{{ registration.get_status_display }}</span>
+                                        {% elif registration.status == 'pending' %}
+                                        <span class="badge bg-warning">{{ registration.get_status_display }}</span>
+                                        {% elif registration.status == 'waiting_list' %}
+                                        <span class="badge bg-info">{{ registration.get_status_display }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ registration.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if registration.team.critical_team_allergies.exists %}
+                                        <span class="text-danger">
+                                            <i class="bi bi-exclamation-triangle-fill"></i>
+                                            {{ registration.team.critical_team_allergies.count }} kritisch
+                                        </span>
+                                        {% elif registration.team.team_dietary_restrictions.exists %}
+                                        <span class="text-warning">
+                                            <i class="bi bi-info-circle"></i>
+                                            {{ registration.team.team_dietary_restrictions.count }} Einschränkungen
+                                        </span>
+                                        {% else %}
+                                        <span class="text-success">
+                                            <i class="bi bi-check-circle"></i> Keine
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if event.can_user_manage_teams:user %}
+                                        <div class="dropdown">
+                                            <button class="btn btn-outline-primary btn-sm dropdown-toggle" 
+                                                    data-bs-toggle="dropdown">
+                                                <i class="bi bi-gear"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <form method="post" action="{% url 'events:update_team_status' event_id=event.id registration_id=registration.id %}">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="status" value="confirmed">
+                                                        <button type="submit" class="dropdown-item text-success">
+                                                            <i class="bi bi-check"></i> Bestätigen
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li>
+                                                    <form method="post" action="{% url 'events:update_team_status' event_id=event.id registration_id=registration.id %}">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="status" value="waiting_list">
+                                                        <button type="submit" class="dropdown-item text-warning">
+                                                            <i class="bi bi-clock"></i> Warteliste
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li>
+                                                    <form method="post" action="{% url 'events:update_team_status' event_id=event.id registration_id=registration.id %}">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="status" value="rejected">
+                                                        <button type="submit" class="dropdown-item text-danger">
+                                                            <i class="bi bi-x"></i> Ablehnen
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                        <h6 class="mt-3 text-muted">Noch keine Anmeldungen</h6>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Event Actions -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightning text-warning"></i>
+                        Aktionen
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if event.can_user_run_optimization:user %}
+                        <button class="btn btn-success">
+                            <i class="bi bi-cpu"></i> Optimierung starten
+                        </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'events:event_detail' event_id=event.id %}" class="btn btn-outline-primary">
+                            <i class="bi bi-eye"></i> Event anzeigen
+                        </a>
+                        
+                        {% if user_role == 'main_organizer' %}
+                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editEventModal">
+                            <i class="bi bi-pencil"></i> Event bearbeiten
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Organizers -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-person-gear text-info"></i>
+                            Organisatoren
+                        </h6>
+                        {% if user_role == 'main_organizer' %}
+                        <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#inviteOrganizerModal">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Haupt-Organisator -->
+                    <div class="d-flex align-items-center mb-3 p-2 bg-warning bg-opacity-10 rounded">
+                        <i class="bi bi-star-fill text-warning me-3"></i>
+                        <div>
+                            <h6 class="mb-0">{{ event.organizer.full_name }}</h6>
+                            <small class="text-muted">Haupt-Organisator</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Co-Organisatoren -->
+                    {% for organizer in organizers %}
+                    <div class="d-flex align-items-center mb-2 p-2 border rounded">
+                        <i class="bi bi-person-check text-primary me-3"></i>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">{{ organizer.user.full_name }}</h6>
+                            <small class="text-muted">{{ organizer.get_role_display }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Critical Allergies Alert -->
+            {% if critical_allergies %}
+            <div class="card border-0 shadow-sm border-danger">
+                <div class="card-header bg-danger text-white py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Kritische Allergien
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for allergy_info in critical_allergies %}
+                    <div class="alert alert-danger py-2 mb-2">
+                        <strong>{{ allergy_info.member }}</strong>
+                        {% for allergy in allergy_info.allergies %}
+                        <div class="small">
+                            <strong>{{ allergy.name }}</strong> ({{ allergy.severity }})
+                            {% if allergy.emergency_info %}
+                            <br>⚠️ {{ allergy.emergency_info }}
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% if allergy_info.emergency_phone %}
+                        <div class="small mt-1">
+                            📞 Notfall: {{ allergy_info.emergency_phone }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Invite Organizer Modal -->
+<div class="modal fade" id="inviteOrganizerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Co-Organisator einladen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'events:invite_organizer' event_id=event.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">E-Mail Adresse</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Rolle</label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="assistant">Assistent</option>
+                            <option value="moderator">Moderator</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Berechtigungen</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="manage_teams" id="perm_teams">
+                            <label class="form-check-label" for="perm_teams">Teams verwalten</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="edit_event" id="perm_edit">
+                            <label class="form-check-label" for="perm_edit">Event bearbeiten</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="run_optimization" id="perm_opt">
+                            <label class="form-check-label" for="perm_opt">Optimierung starten</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Einladen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
