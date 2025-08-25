@@ -605,6 +605,56 @@ def start_optimization(request, event_id):
         })
         optimization_run.save()
 
+        # Erstelle Beispiel-Team-Zuweisungen
+        confirmed_teams_list = list(event.team_registrations.filter(
+            status='confirmed').select_related('team'))
+        from optimization.models import TeamAssignment
+
+        # Erstelle für jedes Team eine Zuweisung
+        for i, registration in enumerate(confirmed_teams_list):
+            # Verteilung der Kurse (abwechselnd)
+            courses = ['appetizer', 'main_course', 'dessert']
+            assigned_course = courses[i % len(courses)]
+
+            # Zufällige Host-Zuweisungen (vereinfacht)
+            hosts_appetizer = confirmed_teams_list[(
+                i + 1) % len(confirmed_teams_list)].team if assigned_course != 'appetizer' else None
+            hosts_main_course = confirmed_teams_list[(
+                i + 2) % len(confirmed_teams_list)].team if assigned_course != 'main_course' else None
+            hosts_dessert = confirmed_teams_list[(
+                i + 3) % len(confirmed_teams_list)].team if assigned_course != 'dessert' else None
+
+            assignment = TeamAssignment.objects.create(
+                optimization_run=optimization_run,
+                team=registration.team,
+                course=assigned_course,
+                hosts_appetizer=hosts_appetizer,
+                hosts_main_course=hosts_main_course,
+                hosts_dessert=hosts_dessert,
+                distance_to_appetizer=round(2.1 + (i * 0.3), 1),
+                distance_to_main_course=round(1.8 + (i * 0.4), 1),
+                distance_to_dessert=round(2.3 + (i * 0.2), 1),
+                total_distance=round(6.2 + (i * 0.9), 1),
+                preference_score=round(85.6 - (i * 2.1), 1)
+            )
+
+            # Füge Gäste hinzu (wenn das Team hostet)
+            if assigned_course == 'appetizer' and hosts_appetizer is None:
+                # Dieses Team hostet Vorspeise
+                guest_teams = [reg.team for reg in confirmed_teams_list[1:4]
+                               if reg.team != registration.team][:2]
+                assignment.guests.set(guest_teams)
+            elif assigned_course == 'main_course' and hosts_main_course is None:
+                # Dieses Team hostet Hauptgang
+                guest_teams = [reg.team for reg in confirmed_teams_list[2:5]
+                               if reg.team != registration.team][:2]
+                assignment.guests.set(guest_teams)
+            elif assigned_course == 'dessert' and hosts_dessert is None:
+                # Dieses Team hostet Nachspeise
+                guest_teams = [reg.team for reg in confirmed_teams_list[0:3]
+                               if reg.team != registration.team][:2]
+                assignment.guests.set(guest_teams)
+
         # Setze Event-Status auf "Optimiert"
         event.status = 'optimized'
         event.save()
@@ -622,3 +672,175 @@ def start_optimization(request, event_id):
             request, f'Fehler bei der Optimierung: {str(e)}')
 
     return redirect('events:manage_event', event_id=event_id)
+
+
+@login_required
+def optimization_results(request, event_id):
+    """Optimierungsergebnisse anzeigen und bearbeiten"""
+    event = get_object_or_404(Event, id=event_id)
+
+    # Prüfe Berechtigung
+    if not event.can_user_manage_event(request.user):
+        messages.error(
+            request, 'Sie haben keine Berechtigung, die Optimierungsergebnisse zu sehen.')
+        return redirect('events:manage_event', event_id=event_id)
+
+    # Hole die neueste Optimierung
+    from optimization.models import OptimizationRun, TeamAssignment
+    latest_optimization = event.optimization_runs.filter(
+        status='completed'
+    ).order_by('-completed_at').first()
+
+    if not latest_optimization:
+        messages.warning(
+            request, 'Noch keine Optimierung durchgeführt.')
+        return redirect('events:manage_event', event_id=event_id)
+
+    # Hole alle Team-Zuweisungen
+    assignments = TeamAssignment.objects.filter(
+        optimization_run=latest_optimization
+    ).select_related('team', 'hosts_appetizer', 'hosts_main_course', 'hosts_dessert').prefetch_related('guests')
+
+    # Gruppiere nach Kursen für bessere Übersicht
+    assignments_by_course = {
+        'appetizer': assignments.filter(course='appetizer'),
+        'main_course': assignments.filter(course='main_course'),
+        'dessert': assignments.filter(course='dessert'),
+    }
+
+    # Erstelle Host-Übersicht
+    hosting_overview = {}
+    for assignment in assignments:
+        if assignment.course == 'appetizer' and assignment.hosts_appetizer is None:
+            # Das Team hostet Vorspeise
+            hosting_overview.setdefault('appetizer', []).append({
+                'host': assignment.team,
+                'guests': list(assignment.guests.all())
+            })
+        elif assignment.course == 'main_course' and assignment.hosts_main_course is None:
+            # Das Team hostet Hauptgang
+            hosting_overview.setdefault('main_course', []).append({
+                'host': assignment.team,
+                'guests': list(assignment.guests.all())
+            })
+        elif assignment.course == 'dessert' and assignment.hosts_dessert is None:
+            # Das Team hostet Nachspeise
+            hosting_overview.setdefault('dessert', []).append({
+                'host': assignment.team,
+                'guests': list(assignment.guests.all())
+            })
+
+    # Berechne Statistiken
+    total_distance = sum(a.total_distance or 0 for a in assignments)
+    avg_distance = total_distance / len(assignments) if assignments else 0
+    avg_preference_score = sum(
+        a.preference_score or 0 for a in assignments) / len(assignments) if assignments else 0
+
+    context = {
+        'event': event,
+        'optimization_run': latest_optimization,
+        'assignments': assignments,
+        'assignments_by_course': assignments_by_course,
+        'hosting_overview': hosting_overview,
+        'stats': {
+            'total_teams': len(assignments),
+            'total_distance': round(total_distance, 1),
+            'avg_distance': round(avg_distance, 1),
+            'avg_preference_score': round(avg_preference_score, 1),
+        }
+    }
+
+    return render(request, 'events/optimization_results.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def send_team_emails(request, event_id):
+    """E-Mails an alle Teams senden"""
+    event = get_object_or_404(Event, id=event_id)
+
+    # Prüfe Berechtigung
+    if not event.can_user_manage_event(request.user):
+        messages.error(
+            request, 'Sie haben keine Berechtigung, E-Mails zu senden.')
+        return redirect('events:optimization_results', event_id=event_id)
+
+    # TODO: Hier würde der echte E-Mail-Versand implementiert
+    from optimization.models import OptimizationRun, TeamAssignment
+    latest_optimization = event.optimization_runs.filter(
+        status='completed'
+    ).order_by('-completed_at').first()
+
+    if not latest_optimization:
+        messages.error(request, 'Keine Optimierung gefunden.')
+        return redirect('events:manage_event', event_id=event_id)
+
+    assignments = TeamAssignment.objects.filter(
+        optimization_run=latest_optimization
+    ).select_related('team')
+
+    # Placeholder: Simuliere E-Mail-Versand
+    email_count = 0
+    for assignment in assignments:
+        # TODO: Hier würde die echte E-Mail gesendet
+        # send_team_assignment_email(assignment)
+        email_count += 1
+
+    messages.success(
+        request,
+        f'E-Mails erfolgreich an {email_count} Teams gesendet! '
+        '(Hinweis: Dies ist aktuell nur eine Simulation)'
+    )
+
+    return redirect('events:optimization_results', event_id=event_id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def adjust_assignment(request, event_id, assignment_id):
+    """Manuelle Anpassung einer Team-Zuweisung"""
+    event = get_object_or_404(Event, id=event_id)
+
+    # Prüfe Berechtigung
+    if not event.can_user_manage_event(request.user):
+        messages.error(
+            request, 'Sie haben keine Berechtigung, Zuweisungen zu ändern.')
+        return redirect('events:optimization_results', event_id=event_id)
+
+    from optimization.models import TeamAssignment
+    from accounts.models import Team
+
+    assignment = get_object_or_404(
+        TeamAssignment, id=assignment_id, optimization_run__event=event)
+
+    try:
+        # Update assignment data
+        assignment.course = request.POST.get('course')
+
+        # Update host assignments
+        hosts_appetizer_id = request.POST.get('hosts_appetizer')
+        hosts_main_course_id = request.POST.get('hosts_main_course')
+        hosts_dessert_id = request.POST.get('hosts_dessert')
+
+        assignment.hosts_appetizer = Team.objects.get(
+            id=hosts_appetizer_id) if hosts_appetizer_id else None
+        assignment.hosts_main_course = Team.objects.get(
+            id=hosts_main_course_id) if hosts_main_course_id else None
+        assignment.hosts_dessert = Team.objects.get(
+            id=hosts_dessert_id) if hosts_dessert_id else None
+
+        # TODO: Recalculate distances based on new assignments
+        # For now, keep existing distances
+
+        assignment.save()
+
+        messages.success(
+            request,
+            f'Zuweisung für Team "{assignment.team.name}" erfolgreich angepasst!'
+        )
+
+    except Exception as e:
+        messages.error(
+            request, f'Fehler beim Anpassen der Zuweisung: {str(e)}')
+
+    return redirect('events:optimization_results', event_id=event_id)

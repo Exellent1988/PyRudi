@@ -31,4 +31,10 @@ urlpatterns = [
          views.unregister_team, name='unregister_team'),
     path('<int:event_id>/optimize/',
          views.start_optimization, name='start_optimization'),
+    path('<int:event_id>/results/',
+         views.optimization_results, name='optimization_results'),
+    path('<int:event_id>/send-emails/',
+         views.send_team_emails, name='send_team_emails'),
+    path('<int:event_id>/assignment/<int:assignment_id>/adjust/',
+         views.adjust_assignment, name='adjust_assignment'),
 ]

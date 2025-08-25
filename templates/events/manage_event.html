@@ -223,6 +223,12 @@
                         </form>
                         {% endif %}
                         
+                        {% if event.status == 'optimized' %}
+                        <a href="{% url 'events:optimization_results' event_id=event.id %}" class="btn btn-info">
+                            <i class="bi bi-diagram-3"></i> Ergebnisse anzeigen
+                        </a>
+                        {% endif %}
+                        
                         <a href="{% url 'events:event_detail' event_id=event.id %}" class="btn btn-outline-primary">
                             <i class="bi bi-eye"></i> Event anzeigen
                         </a>

@@ -1,0 +1,209 @@
+<div class="row g-3">
+    {% for assignment in assignments %}
+    <div class="col-lg-6">
+        <div class="card border-0 {% if assignment.course == course %}border-primary{% else %}bg-light{% endif %}">
+            <div class="card-header {% if assignment.course == course %}bg-primary text-white{% else %}bg-secondary text-white{% endif %}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-people"></i>
+                        {{ assignment.team.name }}
+                        {% if assignment.course == course %}
+                        <span class="badge bg-light text-dark ms-2">HOST</span>
+                        {% endif %}
+                    </h6>
+                    <small>{{ assignment.preference_score }}% Match</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Team Info -->
+                <div class="mb-3">
+                    <div class="small text-muted mb-1">
+                        <i class="bi bi-geo-alt"></i> {{ assignment.team.address }}
+                    </div>
+                    <div class="small text-muted">
+                        <i class="bi bi-people"></i> {{ assignment.team.member_count }} Personen
+                    </div>
+                </div>
+
+                <!-- Course Details -->
+                {% if assignment.course == course %}
+                <!-- This team is hosting this course -->
+                <div class="alert alert-success py-2 mb-3">
+                    <strong><i class="bi bi-house-fill"></i> Hostet {{ course_name }}</strong>
+                    <div class="small mt-1">
+                        Gäste: 
+                        {% for guest in assignment.guests.all %}
+                        <span class="badge bg-secondary me-1">{{ guest.name }}</span>
+                        {% empty %}
+                        <span class="text-muted">Keine Gäste zugewiesen</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <!-- This team is a guest for this course -->
+                <div class="alert alert-info py-2 mb-3">
+                    <strong><i class="bi bi-person"></i> Gast bei {{ course_name }}</strong>
+                    <div class="small mt-1">
+                        {% if course == 'appetizer' and assignment.hosts_appetizer %}
+                        Host: <strong>{{ assignment.hosts_appetizer.name }}</strong>
+                        <br>Entfernung: {{ assignment.distance_to_appetizer }} km
+                        {% elif course == 'main_course' and assignment.hosts_main_course %}
+                        Host: <strong>{{ assignment.hosts_main_course.name }}</strong>
+                        <br>Entfernung: {{ assignment.distance_to_main_course }} km
+                        {% elif course == 'dessert' and assignment.hosts_dessert %}
+                        Host: <strong>{{ assignment.hosts_dessert.name }}</strong>
+                        <br>Entfernung: {{ assignment.distance_to_dessert }} km
+                        {% else %}
+                        <span class="text-muted">Keine Zuweisung</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Dietary Info -->
+                {% if assignment.team.team_dietary_restrictions.exists %}
+                <div class="mb-3">
+                    <small class="text-muted">Diäteinschränkungen:</small>
+                    <div>
+                        {% for restriction in assignment.team.team_dietary_restrictions.all %}
+                        <span class="badge bg-warning text-dark me-1">{{ restriction.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Distance Summary -->
+                <div class="small">
+                    <div class="d-flex justify-content-between">
+                        <span>Gesamtentfernung:</span>
+                        <strong class="text-primary">{{ assignment.total_distance }} km</strong>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="mt-3 d-flex gap-2">
+                    <button class="btn btn-outline-primary btn-sm flex-fill" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#adjustModal{{ assignment.id }}">
+                        <i class="bi bi-pencil"></i> Anpassen
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#teamDetailsModal{{ assignment.team.id }}">
+                        <i class="bi bi-info-circle"></i> Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-info-circle" style="font-size: 3rem;"></i>
+            <h5 class="mt-3">Keine Teams für {{ course_name }}</h5>
+            <p>Für diesen Kurs wurden noch keine Teams zugewiesen.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Team Details Modals -->
+{% for assignment in assignments %}
+<div class="modal fade" id="teamDetailsModal{{ assignment.team.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ assignment.team.name }} - Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Team-Informationen</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Mitglieder:</strong> {{ assignment.team.member_count }}</li>
+                            <li><strong>Adresse:</strong> {{ assignment.team.address }}</li>
+                            <li><strong>Status:</strong> 
+                                {% if assignment.team.is_active %}
+                                <span class="badge bg-success">Aktiv</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inaktiv</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Zuweisungs-Details</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Hosting-Kurs:</strong> 
+                                {% if assignment.course == 'appetizer' %}Vorspeise
+                                {% elif assignment.course == 'main_course' %}Hauptgang  
+                                {% else %}Nachspeise{% endif %}
+                            </li>
+                            <li><strong>Gesamtentfernung:</strong> {{ assignment.total_distance }} km</li>
+                            <li><strong>Präferenz-Score:</strong> {{ assignment.preference_score }}%</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                {% if assignment.team.team_dietary_restrictions.exists %}
+                <hr>
+                <div>
+                    <h6>Diäteinschränkungen</h6>
+                    <div class="row">
+                        {% for restriction in assignment.team.team_dietary_restrictions.all %}
+                        <div class="col-md-6 mb-2">
+                            <span class="badge bg-warning text-dark me-2">{{ restriction.name }}</span>
+                            {% if restriction.severity %}
+                            <small class="text-muted">({{ restriction.get_severity_display }})</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <hr>
+                <div>
+                    <h6>Kurs-Route</h6>
+                    <div class="small">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span><i class="bi bi-cup-hot"></i> Vorspeise ({{ event.appetizer_time|time:"H:i" }}):</span>
+                            <span>
+                                {% if assignment.hosts_appetizer %}
+                                bei {{ assignment.hosts_appetizer.name }}
+                                {% else %}
+                                <strong>Selbst hosting</strong>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span><i class="bi bi-egg-fried"></i> Hauptgang ({{ event.main_course_time|time:"H:i" }}):</span>
+                            <span>
+                                {% if assignment.hosts_main_course %}
+                                bei {{ assignment.hosts_main_course.name }}
+                                {% else %}
+                                <strong>Selbst hosting</strong>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span><i class="bi bi-cup"></i> Nachspeise ({{ event.dessert_time|time:"H:i" }}):</span>
+                            <span>
+                                {% if assignment.hosts_dessert %}
+                                bei {{ assignment.hosts_dessert.name }}
+                                {% else %}
+                                <strong>Selbst hosting</strong>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
