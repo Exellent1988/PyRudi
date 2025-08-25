@@ -3,10 +3,171 @@
 from django.db import migrations
 
 
+def create_standard_dietary_restrictions(apps, schema_editor):
+    """Erstellt Standard-Allergien und Diäteinschränkungen"""
+    DietaryRestriction = apps.get_model('accounts', 'DietaryRestriction')
+
+    restrictions_data = [
+        # Allergien (lebensbedrohlich/schwer)
+        {
+            'name': 'Erdnussallergie',
+            'category': 'allergy',
+            'severity': 'life_threatening',
+            'description': 'Schwere allergische Reaktion auf Erdnüsse',
+            'common_ingredients': 'Erdnüsse, Erdnussöl, Erdnussbutter, Spuren von Nüssen',
+            'alternatives': 'Sonnenblumenkerne, Kürbiskerne',
+            'emergency_info': 'Kann Anaphylaxie auslösen - Notfall-Medikamente griffbereit halten!',
+            'is_active': True
+        },
+        {
+            'name': 'Schalentierallergie',
+            'category': 'allergy',
+            'severity': 'severe',
+            'description': 'Allergie gegen Meeresfrüchte und Schalentiere',
+            'common_ingredients': 'Garnelen, Krabben, Hummer, Muscheln, Austern',
+            'alternatives': 'Fisch ohne Schalen, vegetarische Proteine',
+            'emergency_info': 'Kann schwere Reaktionen auslösen',
+            'is_active': True
+        },
+        {
+            'name': 'Nussallergie',
+            'category': 'allergy',
+            'severity': 'severe',
+            'description': 'Allergie gegen Baumnüsse',
+            'common_ingredients': 'Haselnüsse, Mandeln, Walnüsse, Cashews, Pistazien',
+            'alternatives': 'Samen, kernfreie Alternativen',
+            'emergency_info': 'Schwere allergische Reaktionen möglich',
+            'is_active': True
+        },
+
+        # Unverträglichkeiten
+        {
+            'name': 'Laktoseintoleranz',
+            'category': 'intolerance',
+            'severity': 'moderate',
+            'description': 'Unverträglichkeit von Milchzucker',
+            'common_ingredients': 'Milch, Käse, Butter, Sahne, Joghurt',
+            'alternatives': 'Laktosefreie Produkte, Pflanzenmilch',
+            'emergency_info': '',
+            'is_active': True
+        },
+        {
+            'name': 'Glutenunverträglichkeit/Zöliakie',
+            'category': 'intolerance',
+            'severity': 'severe',
+            'description': 'Autoimmunerkrankung bei Glutenaufnahme',
+            'common_ingredients': 'Weizen, Roggen, Gerste, Hafer (kontaminiert)',
+            'alternatives': 'Glutenfreie Getreide: Reis, Mais, Quinoa',
+            'emergency_info': 'Strikte glutenfreie Diät erforderlich',
+            'is_active': True
+        },
+        {
+            'name': 'Fruktoseintoleranz',
+            'category': 'intolerance',
+            'severity': 'moderate',
+            'description': 'Unverträglichkeit von Fruchtzucker',
+            'common_ingredients': 'Früchte, Honig, Agavendicksaft, Sorbit',
+            'alternatives': 'Glukose, wenig süße Früchte in Maßen',
+            'emergency_info': '',
+            'is_active': True
+        },
+
+        # Diäten/Lebensstil
+        {
+            'name': 'Vegetarisch',
+            'category': 'diet',
+            'severity': 'mild',
+            'description': 'Verzicht auf Fleisch und Fisch',
+            'common_ingredients': 'Fleisch, Fisch, Gelatine, Fleischbrühe',
+            'alternatives': 'Pflanzliche Proteine, Tofu, Hülsenfrüchte',
+            'emergency_info': '',
+            'is_active': True
+        },
+        {
+            'name': 'Vegan',
+            'category': 'diet',
+            'severity': 'moderate',
+            'description': 'Verzicht auf alle tierischen Produkte',
+            'common_ingredients': 'Fleisch, Fisch, Milch, Eier, Honig, Gelatine',
+            'alternatives': 'Pflanzliche Alternativen für alle tierischen Produkte',
+            'emergency_info': '',
+            'is_active': True
+        },
+        {
+            'name': 'Keto/Low-Carb',
+            'category': 'diet',
+            'severity': 'mild',
+            'description': 'Sehr kohlenhydratarme Ernährung',
+            'common_ingredients': 'Brot, Nudeln, Reis, Kartoffeln, Zucker',
+            'alternatives': 'Gemüse, Fleisch, Fisch, gesunde Fette',
+            'emergency_info': '',
+            'is_active': True
+        },
+
+        # Religiöse Einschränkungen
+        {
+            'name': 'Halal',
+            'category': 'religion',
+            'severity': 'moderate',
+            'description': 'Islamische Speisevorschriften',
+            'common_ingredients': 'Schweinefleisch, Alkohol, nicht-halales Fleisch',
+            'alternatives': 'Halal-zertifizierte Produkte',
+            'emergency_info': '',
+            'is_active': True
+        },
+        {
+            'name': 'Kosher',
+            'category': 'religion',
+            'severity': 'moderate',
+            'description': 'Jüdische Speisegesetze',
+            'common_ingredients': 'Schweinefleisch, Mischung von Fleisch und Milch',
+            'alternatives': 'Kosher-zertifizierte Produkte',
+            'emergency_info': '',
+            'is_active': True
+        },
+        {
+            'name': 'Kein Schweinefleisch',
+            'category': 'religion',
+            'severity': 'mild',
+            'description': 'Verzicht auf Schweinefleisch',
+            'common_ingredients': 'Schweinefleisch, Speck, Schinken, Wurst mit Schwein',
+            'alternatives': 'Rind, Geflügel, vegetarische Alternativen',
+            'emergency_info': '',
+            'is_active': True
+        }
+    ]
+
+    # Erstelle alle Standard-Einschränkungen
+    for restriction_data in restrictions_data:
+        DietaryRestriction.objects.get_or_create(
+            name=restriction_data['name'],
+            defaults=restriction_data
+        )
+
+
+def remove_standard_dietary_restrictions(apps, schema_editor):
+    """Entfernt Standard-Allergien (für Rollback)"""
+    DietaryRestriction = apps.get_model('accounts', 'DietaryRestriction')
+
+    standard_names = [
+        'Erdnussallergie', 'Schalentierallergie', 'Nussallergie',
+        'Laktoseintoleranz', 'Glutenunverträglichkeit/Zöliakie', 'Fruktoseintoleranz',
+        'Vegetarisch', 'Vegan', 'Keto/Low-Carb',
+        'Halal', 'Kosher', 'Kein Schweinefleisch'
+    ]
+
+    DietaryRestriction.objects.filter(name__in=standard_names).delete()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
         ("accounts", "0002_dietaryrestriction_and_more"),
     ]
 
-    operations = []
+    operations = [
+        migrations.RunPython(
+            create_standard_dietary_restrictions,
+            remove_standard_dietary_restrictions
+        ),
+    ]

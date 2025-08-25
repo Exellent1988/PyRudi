@@ -111,20 +111,37 @@
             </div>
         </div>
         <div class="col-md-4">
+            {% if user.is_staff %}
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 py-3">
                     <h6 class="card-title mb-0">
                         <i class="bi bi-speedometer2 text-success"></i>
-                        Organisator werden
+                        Event-Organisation
                     </h6>
                 </div>
                 <div class="card-body text-center">
-                    <p class="text-muted small">Organisiere dein eigenes Running Dinner Event!</p>
+                    <p class="text-muted small">Organisiere Running Dinner Events!</p>
                     <a href="{% url 'events:organizer_dashboard' %}" class="btn btn-success">
-                        <i class="bi bi-calendar-plus"></i> Event erstellen
+                        <i class="bi bi-calendar-check"></i> Organizer Dashboard
                     </a>
                 </div>
             </div>
+            {% else %}
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-people text-info"></i>
+                        Community
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted small">Tritt Events bei und lerne neue Leute kennen!</p>
+                    <a href="{% url 'events:event_list' %}" class="btn btn-info">
+                        <i class="bi bi-search"></i> Events entdecken
+                    </a>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 

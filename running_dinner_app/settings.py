@@ -191,6 +191,11 @@ if not DEBUG:
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
+# Login/Logout URLs
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/accounts/dashboard/'
+LOGOUT_REDIRECT_URL = '/'
+
 # OpenRouteService API Key für Routenberechnung
 OPENROUTE_API_KEY = config('OPENROUTE_API_KEY', default='')
 

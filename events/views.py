@@ -174,11 +174,18 @@ def event_detail(request, event_id):
     user_registrations = None
 
     if request.user.is_authenticated:
-        user_teams = Team.objects.filter(members=request.user, is_active=True)
+        user_teams = Team.objects.filter(
+            teammembership__user=request.user,
+            teammembership__is_active=True,
+            is_active=True
+        )
         user_registrations = TeamRegistration.objects.filter(
             event=event,
-            team__members=request.user
+            team__teammembership__user=request.user,
+            team__teammembership__is_active=True
         )
+        # Liste der angemeldeten Teams für Template-Vergleich
+        registered_team_ids = list(user_registrations.values_list('team_id', flat=True))
 
     context = {
         'event': event,
@@ -206,8 +213,15 @@ def organizer_dashboard(request):
         status__in=['planning', 'registration_open', 'registration_closed']).count()
     total_teams = TeamRegistration.objects.filter(event__in=all_events).count()
 
+    # Füge Berechtigungen zu jedem Event hinzu für Templates
+    events_with_permissions = []
+    for event in all_events:
+        event.user_can_manage = event.can_user_manage_event(request.user)
+        event.user_role_display = event.get_organizer_role(request.user)
+        events_with_permissions.append(event)
+
     context = {
-        'events': all_events,
+        'events': events_with_permissions,
         'stats': {
             'total_events': total_events,
             'active_events': active_events,
@@ -218,6 +232,7 @@ def organizer_dashboard(request):
 
 
 @login_required
+@user_passes_test(lambda u: u.is_staff, login_url='/login/')
 def create_event(request):
     """Event erstellen - schönes Frontend"""
     if request.method == 'POST':
@@ -382,3 +397,96 @@ def update_team_status(request, event_id, registration_id):
         messages.error(request, 'Ungültiger Status.')
 
     return redirect('events:manage_event', event_id=event_id)
+
+
+@login_required  
+@require_http_methods(["POST"])
+def register_team(request, event_id):
+    """Team für Event anmelden"""
+    event = get_object_or_404(Event, id=event_id)
+    team_id = request.POST.get('team_id')
+    
+    if not team_id:
+        messages.error(request, 'Bitte wähle ein Team aus.')
+        return redirect('events:event_detail', event_id=event_id)
+    
+    team = get_object_or_404(Team, id=team_id)
+    
+    # Prüfe ob User Berechtigung für dieses Team hat
+    if not TeamMembership.objects.filter(user=request.user, team=team, is_active=True).exists():
+        messages.error(request, 'Du hast keine Berechtigung für dieses Team.')
+        return redirect('events:event_detail', event_id=event_id)
+    
+    # Prüfe ob Anmeldung offen ist
+    if not event.is_registration_open:
+        messages.error(request, 'Die Anmeldung für dieses Event ist nicht mehr möglich.')
+        return redirect('events:event_detail', event_id=event_id)
+    
+    # Prüfe ob Team bereits angemeldet ist
+    if TeamRegistration.objects.filter(event=event, team=team).exists():
+        messages.warning(request, f'Team "{team.name}" ist bereits für dieses Event angemeldet.')
+        return redirect('events:event_detail', event_id=event_id)
+    
+    # Prüfe Event-Kapazität
+    confirmed_count = TeamRegistration.objects.filter(
+        event=event, 
+        status__in=['confirmed', 'pending']
+    ).count()
+    
+    if confirmed_count >= event.max_teams:
+        status = 'waiting_list'
+        messages.info(request, f'Event ist voll - Team "{team.name}" wurde auf die Warteliste gesetzt.')
+    else:
+        status = 'pending'  
+        messages.success(request, f'Team "{team.name}" wurde erfolgreich angemeldet!')
+    
+    # Erstelle Team-Registrierung
+    TeamRegistration.objects.create(
+        event=event,
+        team=team,
+        status=status,
+        preferred_course=request.POST.get('preferred_course', 'main_course'),
+        can_host_appetizer=request.POST.get('can_host_appetizer') == 'on',
+        can_host_main_course=request.POST.get('can_host_main_course') == 'on', 
+        can_host_dessert=request.POST.get('can_host_dessert') == 'on',
+        payment_status='pending'
+    )
+    
+    return redirect('events:event_detail', event_id=event_id)
+
+
+@login_required
+@require_http_methods(["POST"])  
+def unregister_team(request, event_id):
+    """Team-Anmeldung stornieren"""
+    event = get_object_or_404(Event, id=event_id)
+    team_id = request.POST.get('team_id')
+    
+    if not team_id:
+        messages.error(request, 'Bitte wähle ein Team aus.')
+        return redirect('events:event_detail', event_id=event_id)
+    
+    team = get_object_or_404(Team, id=team_id)
+    
+    # Prüfe Berechtigung
+    if not TeamMembership.objects.filter(user=request.user, team=team, is_active=True).exists():
+        messages.error(request, 'Du hast keine Berechtigung für dieses Team.')
+        return redirect('events:event_detail', event_id=event_id)
+    
+    try:
+        registration = TeamRegistration.objects.get(event=event, team=team)
+        
+        # Prüfe ob Stornierung noch möglich
+        from datetime import datetime
+        from django.utils import timezone
+        if event.registration_deadline < timezone.now():
+            messages.error(request, 'Stornierung nach Anmeldeschluss nicht mehr möglich.')
+            return redirect('events:event_detail', event_id=event_id)
+        
+        registration.delete()
+        messages.success(request, f'Anmeldung von Team "{team.name}" wurde storniert.')
+        
+    except TeamRegistration.DoesNotExist:
+        messages.error(request, 'Team ist nicht für dieses Event angemeldet.')
+    
+    return redirect('events:event_detail', event_id=event_id)

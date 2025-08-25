@@ -831,3 +831,295 @@ django.template.exceptions.TemplateSyntaxError: Could not parse the remainder: '
 ERROR 2025-08-25 16:09:00,623 basehttp 23020 281473563292064 "GET /events/organizer/dashboard/ HTTP/1.1" 500 272226
 INFO 2025-08-25 16:09:46,854 autoreload 23020 281473718190112 /workspaces/RunningDinner/events/admin.py changed, reloading.
 INFO 2025-08-25 16:09:47,151 autoreload 23971 281472874319904 Watching for file changes with StatReloader
+INFO 2025-08-25 16:10:39,303 autoreload 23971 281472874319904 /workspaces/RunningDinner/accounts/models.py changed, reloading.
+INFO 2025-08-25 16:10:39,511 autoreload 24504 281473053765664 Watching for file changes with StatReloader
+INFO 2025-08-25 16:11:06,138 autoreload 24504 281473053765664 /workspaces/RunningDinner/accounts/migrations/0003_auto_20250825_1610.py changed, reloading.
+INFO 2025-08-25 16:11:06,597 autoreload 24763 281473676705824 Watching for file changes with StatReloader
+INFO 2025-08-25 16:11:54,661 autoreload 24763 281473676705824 /workspaces/RunningDinner/accounts/migrations/0003_auto_20250825_1610.py changed, reloading.
+INFO 2025-08-25 16:11:55,047 autoreload 25194 281473428987936 Watching for file changes with StatReloader
+ERROR 2025-08-25 16:12:13,319 log 25194 281473340993952 Internal Server Error: /events/organizer/dashboard/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 180, in translate_token
+    op = OPERATORS[token]
+         ~~~~~~~~~^^^^^^^
+KeyError: 'event.can_user_manage_event:user'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/RunningDinner/events/views.py", line 217, in organizer_dashboard
+    return render(request, 'events/organizer_dashboard.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 15, in get_template
+    return engine.get_template(template_name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/backends/django.py", line 79, in get_template
+    return Template(self.engine.get_template(template_name), self)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/engine.py", line 177, in get_template
+    template, origin = self.find_template(template_name)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/engine.py", line 159, in find_template
+    template = loader.get_template(name, skip=skip)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loaders/cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loaders/base.py", line 28, in get_template
+    return Template(
+           ^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 154, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 196, in compile_nodelist
+    nodelist = parser.parse()
+               ^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader_tags.py", line 299, in do_extends
+    nodelist = parser.parse()
+               ^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader_tags.py", line 234, in do_block
+    nodelist = parser.parse(("endblock",))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 962, in do_if
+    nodelist = parser.parse(("elif", "else", "endif"))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 862, in do_for
+    nodelist_loop = parser.parse(
+                    ^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 961, in do_if
+    condition = TemplateIfParser(parser, bits).parse()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 894, in __init__
+    super().__init__(*args, **kwargs)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 171, in __init__
+    mapped_tokens.append(self.translate_token(token))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 182, in translate_token
+    return self.create_var(token)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 897, in create_var
+    return TemplateLiteral(self.template_parser.compile_filter(value), value)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 609, in compile_filter
+    return FilterExpression(token, self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 710, in __init__
+    raise TemplateSyntaxError(
+django.template.exceptions.TemplateSyntaxError: Could not parse the remainder: ':user' from 'event.can_user_manage_event:user'
+ERROR 2025-08-25 16:12:13,321 basehttp 25194 281473340993952 "GET /events/organizer/dashboard/ HTTP/1.1" 500 272075
+INFO 2025-08-25 16:12:58,407 basehttp 25194 281473340993952 "GET /events/ HTTP/1.1" 200 13516
+INFO 2025-08-25 16:12:59,459 autoreload 25194 281473428987936 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 16:12:59,751 autoreload 25764 281473793073184 Watching for file changes with StatReloader
+INFO 2025-08-25 16:13:00,793 basehttp 25764 281473632498080 "GET /events/1/ HTTP/1.1" 200 16659
+INFO 2025-08-25 16:13:06,972 autoreload 25764 281473793073184 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 16:13:07,189 autoreload 25824 281473144668192 Watching for file changes with StatReloader
+INFO 2025-08-25 20:29:16,742 basehttp 25824 281473055781280 "GET /events/organizer/dashboard/ HTTP/1.1" 302 0
+INFO 2025-08-25 20:29:17,782 autoreload 25824 281473144668192 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 20:29:18,109 autoreload 32283 281473040511008 Watching for file changes with StatReloader
+INFO 2025-08-25 20:32:59,928 autoreload 32283 281473040511008 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 20:33:00,168 autoreload 33657 281472821735456 Watching for file changes with StatReloader
+INFO 2025-08-25 20:33:07,400 autoreload 33657 281472821735456 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 20:33:07,709 autoreload 33721 281472906362912 Watching for file changes with StatReloader
+INFO 2025-08-25 20:33:14,957 autoreload 33721 281472906362912 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 20:33:15,213 autoreload 33833 281473102053408 Watching for file changes with StatReloader
+INFO 2025-08-25 20:37:47,421 autoreload 33833 281473102053408 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 20:37:47,721 autoreload 35858 281473132793888 Watching for file changes with StatReloader
+INFO 2025-08-25 20:38:22,928 basehttp 35858 281473045295520 "GET /events/ HTTP/1.1" 200 18860
+INFO 2025-08-25 20:38:27,786 basehttp 35858 281473045295520 "GET /events/2/ HTTP/1.1" 200 16880
+WARNING 2025-08-25 20:38:36,971 log 35858 281473045295520 Method Not Allowed (GET): /admin/logout/
+WARNING 2025-08-25 20:38:36,973 basehttp 35858 281473045295520 "GET /admin/logout/ HTTP/1.1" 405 0
+INFO 2025-08-25 20:38:51,751 basehttp 35858 281473045295520 "GET / HTTP/1.1" 200 17898
+WARNING 2025-08-25 20:38:54,758 log 35858 281473045295520 Method Not Allowed (GET): /admin/logout/
+WARNING 2025-08-25 20:38:54,759 basehttp 35858 281473045295520 "GET /admin/logout/ HTTP/1.1" 405 0
+INFO 2025-08-25 20:39:05,078 basehttp 35858 281473045295520 "GET / HTTP/1.1" 200 17898
+INFO 2025-08-25 20:39:07,169 basehttp 35858 281473045295520 "GET /events/ HTTP/1.1" 200 18860
+INFO 2025-08-25 20:39:09,106 basehttp 35858 281473045295520 "GET /events/2/ HTTP/1.1" 200 16880
+INFO 2025-08-25 20:39:15,697 basehttp 35858 281473045295520 "GET /events/2/ HTTP/1.1" 200 16880
+INFO 2025-08-25 20:39:25,744 basehttp 35858 281473045295520 "GET /events/organizer/dashboard/ HTTP/1.1" 200 11994
+INFO 2025-08-25 20:39:29,609 basehttp 35858 281473045295520 "GET /events/1/ HTTP/1.1" 200 16717
+INFO 2025-08-25 20:39:33,047 autoreload 35858 281473132793888 /workspaces/RunningDinner/running_dinner_app/urls.py changed, reloading.
+INFO 2025-08-25 20:39:33,322 autoreload 36812 281472896499744 Watching for file changes with StatReloader
+INFO 2025-08-25 20:39:43,702 autoreload 36812 281472896499744 /workspaces/RunningDinner/running_dinner_app/urls.py changed, reloading.
+INFO 2025-08-25 20:39:44,027 autoreload 36939 281473141723168 Watching for file changes with StatReloader
+INFO 2025-08-25 20:40:13,689 autoreload 36939 281473141723168 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 20:40:13,996 autoreload 37140 281473314238496 Watching for file changes with StatReloader
+INFO 2025-08-25 20:41:00,017 autoreload 37140 281473314238496 /workspaces/RunningDinner/running_dinner_app/settings.py changed, reloading.
+INFO 2025-08-25 20:41:00,272 autoreload 37496 281473708228640 Watching for file changes with StatReloader
+WARNING 2025-08-25 20:41:22,416 log 37496 281473552806304 Method Not Allowed (GET): /logout/
+WARNING 2025-08-25 20:41:22,417 basehttp 37496 281473552806304 "GET /logout/ HTTP/1.1" 405 0
+INFO 2025-08-25 20:41:32,902 basehttp 37496 281473552806304 "GET /login/ HTTP/1.1" 200 8046
+WARNING 2025-08-25 20:41:38,989 log 37496 281473552806304 Method Not Allowed (GET): /admin/logout/
+WARNING 2025-08-25 20:41:38,989 basehttp 37496 281473552806304 "GET /admin/logout/ HTTP/1.1" 405 0
+WARNING 2025-08-25 20:41:40,853 log 37496 281473552806304 Method Not Allowed (GET): /admin/logout/
+WARNING 2025-08-25 20:41:40,854 basehttp 37496 281473552806304 "GET /admin/logout/ HTTP/1.1" 405 0
+INFO 2025-08-25 20:42:00,708 autoreload 37496 281473708228640 /workspaces/RunningDinner/running_dinner_app/settings.py changed, reloading.
+INFO 2025-08-25 20:42:00,950 autoreload 38118 281473500336160 Watching for file changes with StatReloader
+INFO 2025-08-25 20:42:15,094 basehttp 38118 281473345188256 "GET / HTTP/1.1" 200 17892
+INFO 2025-08-25 20:43:00,052 basehttp 38118 281473345188256 "GET /events/organizer/dashboard/ HTTP/1.1" 200 12413
+INFO 2025-08-25 20:43:02,201 basehttp 38118 281473345188256 "POST /logout/ HTTP/1.1" 302 0
+INFO 2025-08-25 20:43:02,221 basehttp 38118 281473345188256 "GET / HTTP/1.1" 200 16390
+INFO 2025-08-25 20:43:04,893 basehttp 38118 281473345188256 "GET /login/ HTTP/1.1" 200 8046
+INFO 2025-08-25 20:43:14,282 basehttp 38118 281473345188256 "POST /login/ HTTP/1.1" 200 8591
+INFO 2025-08-25 20:43:21,208 basehttp 38118 281473345188256 "POST /login/ HTTP/1.1" 200 8591
+INFO 2025-08-25 20:43:31,146 basehttp 38118 281473345188256 "POST /login/ HTTP/1.1" 200 8593
+INFO 2025-08-25 20:43:59,697 autoreload 38118 281473500336160 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 20:43:59,986 autoreload 39042 281473503809568 Watching for file changes with StatReloader
+INFO 2025-08-25 20:44:53,182 basehttp 39042 281473347285408 "POST /login/ HTTP/1.1" 200 8591
+INFO 2025-08-25 20:45:00,224 autoreload 39042 281473503809568 /workspaces/RunningDinner/events/urls.py changed, reloading.
+INFO 2025-08-25 20:45:00,564 autoreload 39600 281473667751968 Watching for file changes with StatReloader
+INFO 2025-08-25 20:46:59,283 basehttp 39600 281473580069280 "POST /login/ HTTP/1.1" 302 0
+INFO 2025-08-25 20:46:59,307 basehttp 39600 281473580069280 "GET /accounts/dashboard/ HTTP/1.1" 200 13596
+INFO 2025-08-25 20:47:01,394 basehttp 39600 281473580069280 "GET /events/organizer/dashboard/ HTTP/1.1" 200 12421
+INFO 2025-08-25 20:47:04,519 basehttp 39600 281473580069280 "GET /events/2/ HTTP/1.1" 200 16993
+ERROR 2025-08-25 20:47:11,368 log 39600 281473580069280 Internal Server Error: /events/2/manage/
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 180, in translate_token
+    op = OPERATORS[token]
+         ~~~~~~~~~^^^^^^^
+KeyError: 'event.can_user_manage_teams:user'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/RunningDinner/events/views.py", line 311, in manage_event
+    return render(request, 'events/manage_event.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader.py", line 15, in get_template
+    return engine.get_template(template_name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/backends/django.py", line 79, in get_template
+    return Template(self.engine.get_template(template_name), self)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/engine.py", line 177, in get_template
+    template, origin = self.find_template(template_name)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/engine.py", line 159, in find_template
+    template = loader.get_template(name, skip=skip)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loaders/cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loaders/base.py", line 28, in get_template
+    return Template(
+           ^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 154, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 196, in compile_nodelist
+    nodelist = parser.parse()
+               ^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader_tags.py", line 299, in do_extends
+    nodelist = parser.parse()
+               ^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/loader_tags.py", line 234, in do_block
+    nodelist = parser.parse(("endblock",))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 962, in do_if
+    nodelist = parser.parse(("elif", "else", "endif"))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 862, in do_for
+    nodelist_loop = parser.parse(
+                    ^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 518, in parse
+    raise self.error(token, e)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 516, in parse
+    compiled_result = compile_func(self, token)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 961, in do_if
+    condition = TemplateIfParser(parser, bits).parse()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 894, in __init__
+    super().__init__(*args, **kwargs)
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 171, in __init__
+    mapped_tokens.append(self.translate_token(token))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/smartif.py", line 182, in translate_token
+    return self.create_var(token)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/defaulttags.py", line 897, in create_var
+    return TemplateLiteral(self.template_parser.compile_filter(value), value)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 609, in compile_filter
+    return FilterExpression(token, self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vscode/.local/lib/python3.11/site-packages/django/template/base.py", line 710, in __init__
+    raise TemplateSyntaxError(
+django.template.exceptions.TemplateSyntaxError: Could not parse the remainder: ':user' from 'event.can_user_manage_teams:user'
+ERROR 2025-08-25 20:47:11,371 basehttp 39600 281473580069280 "GET /events/2/manage/ HTTP/1.1" 500 353896
+INFO 2025-08-25 20:47:48,193 autoreload 39600 281473667751968 /workspaces/RunningDinner/events/views.py changed, reloading.
+INFO 2025-08-25 20:47:48,467 autoreload 41047 281473493721120 Watching for file changes with StatReloader

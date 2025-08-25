@@ -6,21 +6,21 @@ from django.utils.translation import gettext_lazy as _
 
 class DietaryRestriction(models.Model):
     """Modell für standardisierte Ernährungseinschränkungen"""
-    
+
     CATEGORY_CHOICES = [
         ('allergy', _('Allergie')),
         ('intolerance', _('Unverträglichkeit')),
         ('diet', _('Diät/Lebensstil')),
         ('religion', _('Religiöse Einschränkung')),
     ]
-    
+
     SEVERITY_CHOICES = [
         ('mild', _('Leicht')),
         ('moderate', _('Moderat')),
         ('severe', _('Schwer')),
         ('life_threatening', _('Lebensbedrohlich')),
     ]
-    
+
     name = models.CharField(
         _('Name'),
         max_length=100,
@@ -61,7 +61,7 @@ class DietaryRestriction(models.Model):
         _('Aktiv'),
         default=True
     )
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -90,7 +90,7 @@ class DietaryRestriction(models.Model):
 
 class CustomUser(AbstractUser):
     """Erweiterte User-Klasse für zusätzliche Funktionalität"""
-    
+
     email = models.EmailField(
         _('E-Mail Adresse'),
         unique=True,
@@ -174,7 +174,7 @@ class CustomUser(AbstractUser):
     @property
     def has_dietary_restrictions(self):
         """Prüft ob User Ernährungseinschränkungen hat"""
-        return (self.dietary_restrictions_structured.exists() or 
+        return (self.dietary_restrictions_structured.exists() or
                 bool(self.dietary_restrictions.strip()))
 
     @property
@@ -217,7 +217,7 @@ class CustomUser(AbstractUser):
 
 class Team(models.Model):
     """Modell für Running Dinner Teams"""
-    
+
     name = models.CharField(
         _('Team-Name'),
         max_length=100,
@@ -331,19 +331,20 @@ class Team(models.Model):
         """Zusammenfassung aller Team-Diäteinschränkungen"""
         restrictions = list(self.team_dietary_restrictions)
         member_texts = []
-        
+
         for member in self.members.filter(teammembership__is_active=True):
             if member.dietary_restrictions.strip():
-                member_texts.append(f"{member.first_name}: {member.dietary_restrictions}")
-        
+                member_texts.append(
+                    f"{member.first_name}: {member.dietary_restrictions}")
+
         summary = []
         if restrictions:
             restriction_names = [r.name for r in restrictions]
             summary.append("Allergien/Diäten: " + ", ".join(restriction_names))
-        
+
         if member_texts:
             summary.extend(member_texts)
-        
+
         return summary if summary else ["Keine besonderen Einschränkungen"]
 
     def get_team_emergency_info(self):
@@ -362,9 +363,11 @@ class Team(models.Model):
     def is_compatible_with_dietary_restrictions(self, other_team):
         """Prüft ob zwei Teams bzgl. Ernährungseinschränkungen kompatibel sind"""
         # Diese Methode kann später für das Matching verwendet werden
-        our_restrictions = set(self.team_dietary_restrictions.values_list('id', flat=True))
-        their_restrictions = set(other_team.team_dietary_restrictions.values_list('id', flat=True))
-        
+        our_restrictions = set(
+            self.team_dietary_restrictions.values_list('id', flat=True))
+        their_restrictions = set(
+            other_team.team_dietary_restrictions.values_list('id', flat=True))
+
         # Hier können komplexere Regeln implementiert werden
         # z.B. Vegetarier sollten nicht bei Fleischliebhabern essen
         return True  # Vorerst immer kompatibel
@@ -372,13 +375,13 @@ class Team(models.Model):
 
 class TeamMembership(models.Model):
     """Zwischen-Tabelle für Team-Mitgliedschaften"""
-    
+
     ROLE_CHOICES = [
         ('leader', _('Team-Leader')),
         ('member', _('Mitglied')),
         ('substitute', _('Ersatzmitglied')),
     ]
-    
+
     user = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
@@ -413,14 +416,14 @@ class TeamMembership(models.Model):
 
 class TeamInvitation(models.Model):
     """Modell für Team-Einladungen"""
-    
+
     STATUS_CHOICES = [
         ('pending', _('Ausstehend')),
         ('accepted', _('Angenommen')),
         ('declined', _('Abgelehnt')),
         ('expired', _('Abgelaufen')),
     ]
-    
+
     team = models.ForeignKey(
         Team,
         on_delete=models.CASCADE,
@@ -481,7 +484,7 @@ class TeamInvitation(models.Model):
             self.status = 'accepted'
             self.responded_at = timezone.now()
             self.save()
-            
+
             # Team-Mitgliedschaft erstellen
             TeamMembership.objects.get_or_create(
                 user=user,

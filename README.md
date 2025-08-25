@@ -25,8 +25,9 @@ Eine moderne Django-basierte Webapp zur Organisation von Running Dinner Events m
 
 4. **Services verfügbar:**
    - **Django App**: http://localhost:8000
-   - **Admin**: http://localhost:8000/admin (admin@runningdinner.de)
-   - **MailHog**: http://localhost:8025
+   - **Login**: http://localhost:8000/login/
+   - **Admin**: http://localhost:8000/admin/
+   - **MailHog**: http://localhost:8025 (E-Mail Testing)
    - **pgAdmin**: http://localhost:8080
 
 ### Option 2: Docker Compose
@@ -40,6 +41,41 @@ make shell             # Django Shell
 
 # Production Environment  
 make prod-up           # Starte Production Setup
+```
+
+## 🧪 Testdaten & Demo-Accounts
+
+Das System wird automatisch mit umfassenden Testdaten initialisiert:
+
+### 🔑 Login-Daten
+**Wichtig: Verwende den Benutzernamen, NICHT die E-Mail-Adresse!**
+
+```
+# Staff/Event-Organisator
+Benutzername: organizer
+Passwort: testpass123
+
+# Test-Teilnehmer  
+Benutzername: anna_muller, tom_schmidt, lisa_weber, marco_fischer, sara_klein, jan_meyer
+Passwort: testpass123 (für alle)
+```
+
+### 📊 Vorhandene Testdaten
+- **1 Staff-User** (`organizer`) für Event-Management
+- **6 Test-User** mit verschiedenen Allergien/Diäten
+- **3 Teams** mit realistischen Profilen und Adressen in München
+- **1 Test-Event** ("München Running Dinner - Testveranstaltung") mit Team-Anmeldungen
+- **12 Standard-Allergien** (Erdnuss, Laktose, Vegetarisch, Vegan, Halal, etc.)
+
+### 🎭 Test-Teams mit Allergien
+- **Team Gourmets** (Anna & Tom): Erdnussallergie + Vegetarisch
+- **Team Veggie-Power** (Lisa & Marco): Vegan + Laktose + Gluten  
+- **Team Weltenbummler** (Sara & Jan): Halal
+
+### 🔄 Testdaten zurücksetzen
+```bash
+python manage.py migrate accounts 0003  # Entfernt Testdaten
+python manage.py migrate                # Erstellt sie neu
 ```
 
 ## 🏗️ Projekt-Struktur

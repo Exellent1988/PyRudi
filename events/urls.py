@@ -25,4 +25,6 @@ urlpatterns = [
          views.invite_organizer, name='invite_organizer'),
     path('<int:event_id>/team/<int:registration_id>/status/',
          views.update_team_status, name='update_team_status'),
+    path('<int:event_id>/register/', views.register_team, name='register_team'),
+    path('<int:event_id>/unregister/', views.unregister_team, name='unregister_team'),
 ]

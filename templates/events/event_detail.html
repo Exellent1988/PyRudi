@@ -204,9 +204,18 @@
                         <div class="card-body p-3">
                             <h6 class="card-title mb-1">{{ team.name }}</h6>
                             <p class="card-text small text-muted mb-2">{{ team.member_count }} Mitglied{{ team.member_count|pluralize:'er' }}</p>
-                            <button class="btn btn-outline-primary btn-sm w-100">
-                                <i class="bi bi-plus"></i> Team anmelden
-                            </button>
+                            
+                            <form method="post" action="{% url 'events:register_team' event_id=event.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="team_id" value="{{ team.id }}">
+                                <input type="hidden" name="preferred_course" value="main_course">
+                                <input type="hidden" name="can_host_appetizer" value="on">
+                                <input type="hidden" name="can_host_main_course" value="on">
+                                <input type="hidden" name="can_host_dessert" value="on">
+                                <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+                                    <i class="bi bi-plus"></i> Team anmelden
+                                </button>
+                            </form>
                         </div>
                     </div>
                     {% endif %}

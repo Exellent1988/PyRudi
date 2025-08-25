@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Anmelden - Running Dinner{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white py-3 text-center">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        Anmelden
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">
+                                <i class="bi bi-person text-primary"></i>
+                                Benutzername
+                            </label>
+                            <input type="text" name="username" class="form-control" placeholder="z.B. organizer" required id="{{ form.username.id_for_label }}">
+                            <div class="form-text">
+                                Verwende deinen <strong>Benutzernamen</strong>, nicht die E-Mail-Adresse
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                                <i class="bi bi-lock text-primary"></i>
+                                Passwort
+                            </label>
+                            <input type="password" name="password" class="form-control" placeholder="Passwort eingeben" required id="{{ form.password.id_for_label }}">
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                Anmelden
+                            </button>
+                        </div>
+
+                        {% if next %}
+                            <input type="hidden" name="next" value="{{ next }}" />
+                        {% endif %}
+                    </form>
+                </div>
+                <div class="card-footer bg-light text-center py-3">
+                    <small class="text-muted">
+                        Noch kein Account? 
+                        <a href="{% url 'home' %}" class="text-decoration-none">
+                            Zurück zur Startseite
+                        </a>
+                    </small>
+                </div>
+            </div>
+
+            <!-- Demo-Hinweis -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-info text-white py-3">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Demo-Accounts
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <h6 class="fw-bold">Event-Organisator:</h6>
+                            <div class="bg-light p-2 rounded">
+                                <strong>Benutzername:</strong> <code>organizer</code><br>
+                                <strong>Passwort:</strong> <code>testpass123</code>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <h6 class="fw-bold">Teilnehmer:</h6>
+                            <div class="bg-light p-2 rounded">
+                                <strong>Benutzername:</strong> <code>anna_muller</code>, <code>tom_schmidt</code>, <code>lisa_weber</code>...<br>
+                                <strong>Passwort:</strong> <code>testpass123</code> (für alle)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Form-Styling */
+.form-control {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
+{% endblock %}

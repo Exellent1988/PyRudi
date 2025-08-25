@@ -83,6 +83,7 @@
                                 <i class="bi bi-person"></i> Profil
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
+                            {% if user.is_staff %}
                             <li><h6 class="dropdown-header">Event-Organisation</h6></li>
                             <li><a class="dropdown-item" href="{% url 'events:organizer_dashboard' %}">
                                 <i class="bi bi-calendar-check"></i> Meine Events
@@ -90,15 +91,21 @@
                             <li><a class="dropdown-item" href="{% url 'events:create_event' %}">
                                 <i class="bi bi-plus-circle"></i> Event erstellen
                             </a></li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'admin:logout' %}">
-                                <i class="bi bi-box-arrow-right"></i> Abmelden
-                            </a></li>
+                            <li>
+                                <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item border-0 bg-transparent w-100 text-start">
+                                        <i class="bi bi-box-arrow-right"></i> Abmelden
+                                    </button>
+                                </form>
+                            </li>
                         </ul>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'admin:login' %}">
+                        <a class="nav-link" href="{% url 'login' %}">
                             <i class="bi bi-box-arrow-in-right"></i> Anmelden
                         </a>
                     </li>
