@@ -52,34 +52,46 @@ class RunningDinnerOptimizer:
 
     def calculate_distances(self):
         """
-        Berechne Entfernungsmatrix zwischen allen Teams
-        TODO: Später mit echter geografischer API (OpenRouteService) ersetzen
+        Berechne echte Fußgänger-Entfernungen zwischen allen Teams
+        Verwendet OpenRouteService API für realistische Routen
         """
+        from .routing import get_route_calculator
+        
         n = len(self.teams)
-        self.distances = {}
+        logger.info(f"🗺️ Berechne echte Fußgänger-Routen für {n} Teams...")
 
-        # Simuliere realistische Entfernungen in München (0.5-4.0 km)
+        # Verwende echtes Routing
+        route_calculator = get_route_calculator()
+        self.distances = route_calculator.calculate_team_distances(self.teams)
+        
+        # Validierung: Prüfe ob alle Entfernungen vorhanden sind
+        missing_distances = 0
         for i, team1 in enumerate(self.teams):
             for j, team2 in enumerate(self.teams):
-                if i == j:
-                    self.distances[(team1.id, team2.id)] = 0.0
-                else:
-                    # Konsistente, symmetrische Entfernungen
-                    key = tuple(sorted([team1.id, team2.id]))
-                    if key not in self.distances:
-                        # Simuliere Entfernung basierend auf Team-IDs für Konsistenz
-                        random.seed(hash(key) % 1000000)
-                        dist = round(random.uniform(0.5, 4.0), 1)
-                        self.distances[key] = dist
+                if (team1.id, team2.id) not in self.distances:
+                    logger.warning(f"⚠️ Fehlende Entfernung: {team1.name} → {team2.name}")
+                    # Fallback-Entfernung
+                    self.distances[(team1.id, team2.id)] = 2.5
+                    missing_distances += 1
+                    
+        if missing_distances > 0:
+            logger.warning(f"⚠️ {missing_distances} Entfernungen mit Fallback-Werten ergänzt")
+            
+        # Statistiken
+        all_distances = [d for d in self.distances.values() if d > 0]
+        if all_distances:
+            avg_distance = sum(all_distances) / len(all_distances)
+            max_distance = max(all_distances)
+            min_distance = min(all_distances)
+            
+            logger.info(f"📊 Entfernungs-Statistiken:")
+            logger.info(f"   Ø Entfernung: {avg_distance:.2f}km")
+            logger.info(f"   Min/Max: {min_distance:.2f}km / {max_distance:.2f}km")
+            logger.info(f"   Gesamt: {len(all_distances)} Routen berechnet")
+        else:
+            logger.error("❌ Keine gültigen Entfernungen berechnet!")
 
-                    # Symmetrische Zuordnung
-                    sorted_key = tuple(sorted([team1.id, team2.id]))
-                    self.distances[(team1.id, team2.id)
-                                   ] = self.distances[sorted_key]
-                    self.distances[(team2.id, team1.id)
-                                   ] = self.distances[sorted_key]
-
-        logger.info(f"📏 Entfernungsmatrix für {n} Teams berechnet")
+        logger.info(f"✅ Echte Fußgänger-Routen für {n} Teams berechnet")
 
     def create_mip_model(self):
         """
@@ -387,6 +399,8 @@ class RunningDinnerOptimizer:
                 f"📍 {course}: {len(course_hosts)} Teams hosten diesen Kurs")
 
         # SCHRITT 2: Für jedes Team berechne seine Route (welche Hosts besucht es)
+        # WICHTIG: Korrekte Route-Berechnung: Home → Vorspeise → Hauptgang → Nachspeise
+        # (nicht immer von Home aus, sondern von der aktuellen Position!)
         total_distance = 0
         guests_per_host = {}  # host_team_id -> [guest_team_objects]
 
@@ -398,13 +412,18 @@ class RunningDinnerOptimizer:
             my_hosting_course = team_hosting_map[team.id]
             hosts = {}
             distances = {}
+            
+            # Verfolge die aktuelle Position des Teams während der Route
+            current_location = team  # Start von der Team-Home-Adresse
 
-            # Für jeden Kurs: Finde besten verfügbaren Host
+            # Für jeden Kurs: Finde besten verfügbaren Host (korrekte Route-Berechnung)
             for course in courses:
                 if course == my_hosting_course:
-                    # Ich hoste diesen Kurs selbst
+                    # Ich hoste diesen Kurs selbst - bleibe zuhause
                     hosts[course] = None
                     distances[course] = 0
+                    # Aktuelle Position bleibt zuhause (Team-Home)
+                    current_location = team
                 else:
                     # Finde besten Host (mit wenigsten Gästen + kürzeste Entfernung)
                     best_host = None
@@ -413,7 +432,8 @@ class RunningDinnerOptimizer:
                     for potential_host in host_teams_by_course[course]:
                         current_guest_count = len(
                             guests_per_host[potential_host.id])
-                        distance = self.distances[(team.id, potential_host.id)]
+                        # KORREKT: Distanz von aktueller Position zum Host
+                        distance = self.distances[(current_location.id, potential_host.id)]
 
                         # Score = Gästeanzahl * 10 + Entfernung (priorisiere gleichmäßige Verteilung)
                         score = current_guest_count * 10 + distance
@@ -423,7 +443,10 @@ class RunningDinnerOptimizer:
                             best_host = potential_host
 
                     hosts[course] = best_host
-                    distances[course] = self.distances[(team.id, best_host.id)]
+                    distances[course] = self.distances[(current_location.id, best_host.id)]
+                    
+                    # Team bewegt sich zum neuen Host-Standort
+                    current_location = best_host
 
                     # Füge mich als Gast zu diesem Host hinzu
                     guests_per_host[best_host.id].append(team)

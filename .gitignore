@@ -5,3 +5,23 @@
 cursor*.md
 *.sqlite3
 debug.log
+
+# Media files
+media/
+
+# Static files collected
+staticfiles/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node.js (falls später Frontend hinzugefügt wird)
+node_modules/
+npm-debug.log*

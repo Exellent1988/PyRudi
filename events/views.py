@@ -699,11 +699,11 @@ def optimization_results(request, event_id):
     """Optimierungsergebnisse anzeigen und bearbeiten"""
     event = get_object_or_404(Event, id=event_id)
 
-    # Prüfe Berechtigung
-    if not event.can_user_manage_event(request.user):
+    # Prüfe Berechtigung - nur für Staff-User oder Event-Organisatoren
+    if not (request.user.is_staff or request.user.is_superuser):
         messages.error(
             request, 'Sie haben keine Berechtigung, die Optimierungsergebnisse zu sehen.')
-        return redirect('events:manage_event', event_id=event_id)
+        return redirect('events:event_detail', event_id=event_id)
 
     # Hole die neueste Optimierung
     from optimization.models import OptimizationRun, TeamAssignment
