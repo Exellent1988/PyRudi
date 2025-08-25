@@ -342,96 +342,122 @@ class RunningDinnerOptimizer:
             f"✅ Lösung extrahiert: {len(solution['assignments'])} Team-Zuweisungen")
         return solution
 
-    def heuristic_fallback(self) -> Dict:
+    def simple_running_dinner_solution(self) -> Dict:
         """
-        Einfache Heuristik als Fallback wenn MIP fehlschlägt
+        Korrekte Running Dinner Lösung
+        Prinzip: Jedes Team hostet GENAU einen Kurs und besucht die anderen beiden
         """
-        logger.info("🔄 Starte Heuristik-Fallback...")
+        logger.info("🍽️ Starte Running Dinner Algorithmus...")
 
         n_teams = len(self.teams)
         courses = self.courses
+        n_courses = len(courses)
 
-        # Teile Teams gleichmäßig auf Kurse auf
-        teams_per_course = n_teams // len(courses)
-        remaining_teams = n_teams % len(courses)
+        # Berechne Teams pro Kurs (sollte bei 12 Teams = 4 pro Kurs sein)
+        teams_per_course = n_teams // n_courses
+        extra_teams = n_teams % n_courses
 
         solution = {
             'assignments': [],
             'hosting': {},
             'meetings': {},
             'travel_times': {},
-            'objective_value': 50.0,  # Mittelmäßiger Wert für Heuristik
+            'objective_value': 0.0,
             'penalties': {'z1_violations': 0, 'z2_violations': 0, 'z3_violations': 0}
         }
 
-        # Verteile Teams auf Kurse
+        # SCHRITT 1: Weise jedes Team einem Hosting-Kurs zu
+        team_hosting_map = {}  # team_id -> course
+        host_teams_by_course = {}  # course -> [team_ids]
         team_idx = 0
+
         for course_idx, course in enumerate(courses):
-            # Anzahl Teams für diesen Kurs
-            teams_for_course = teams_per_course + \
-                (1 if course_idx < remaining_teams else 0)
-            course_teams = self.teams[team_idx:team_idx + teams_for_course]
-            team_idx += teams_for_course
+            num_hosts_for_course = teams_per_course + \
+                (1 if course_idx < extra_teams else 0)
+            course_hosts = self.teams[team_idx:team_idx + num_hosts_for_course]
 
-            # Wähle erstes Team als Host
-            if course_teams:
-                host_team = course_teams[0]
-                solution['hosting'][course] = [host_team.id]
+            host_teams_by_course[course] = course_hosts
+            solution['hosting'][course] = [t.id for t in course_hosts]
 
-                # Alle Teams in diesem Kurs besuchen den Host
-                for team in course_teams:
-                    hosts = {c: None for c in courses}
-                    hosts[course] = host_team if team != host_team else None
+            for team in course_hosts:
+                team_hosting_map[team.id] = course
 
-                    distances = {}
-                    for c in courses:
-                        if hosts[c]:
-                            distances[c] = self.distances[(
-                                team.id, hosts[c].id)]
-                        else:
-                            distances[c] = 0
+            team_idx += num_hosts_for_course
+            logger.info(
+                f"📍 {course}: {len(course_hosts)} Teams hosten diesen Kurs")
 
-                    assignment = {
-                        'team': team,
-                        'hosts': hosts,
-                        'course_hosted': course if team == host_team else None,
-                        'distances': distances,
-                        'total_distance': sum(distances.values())
-                    }
-                    solution['assignments'].append(assignment)
+        # SCHRITT 2: Für jedes Team berechne seine Route (welche Hosts besucht es)
+        total_distance = 0
+        guests_per_host = {}  # host_team_id -> [guest_team_objects]
 
-        # Vervollständige für verbleibende Teams
-        remaining_teams_list = self.teams[team_idx:]
-        for i, team in enumerate(remaining_teams_list):
-            course = courses[i % len(courses)]
-            host_team = None
+        # Initialisiere Gäste-Listen
+        for team in self.teams:
+            guests_per_host[team.id] = []
 
-            # Finde Host für diesen Kurs
-            for host_id in solution['hosting'].get(course, []):
-                host_team = next(
-                    (t for t in self.teams if t.id == host_id), None)
-                break
+        for team in self.teams:
+            my_hosting_course = team_hosting_map[team.id]
+            hosts = {}
+            distances = {}
 
-            if host_team:
-                hosts = {c: None for c in courses}
-                hosts[course] = host_team
+            # Für jeden Kurs: Finde besten verfügbaren Host
+            for course in courses:
+                if course == my_hosting_course:
+                    # Ich hoste diesen Kurs selbst
+                    hosts[course] = None
+                    distances[course] = 0
+                else:
+                    # Finde besten Host (mit wenigsten Gästen + kürzeste Entfernung)
+                    best_host = None
+                    best_score = float('inf')
 
-                distances = {course: self.distances[(team.id, host_team.id)]}
-                for c in courses:
-                    if c != course:
-                        distances[c] = 0
+                    for potential_host in host_teams_by_course[course]:
+                        current_guest_count = len(
+                            guests_per_host[potential_host.id])
+                        distance = self.distances[(team.id, potential_host.id)]
 
-                assignment = {
-                    'team': team,
-                    'hosts': hosts,
-                    'course_hosted': None,
-                    'distances': distances,
-                    'total_distance': sum(distances.values())
-                }
-                solution['assignments'].append(assignment)
+                        # Score = Gästeanzahl * 10 + Entfernung (priorisiere gleichmäßige Verteilung)
+                        score = current_guest_count * 10 + distance
 
+                        if score < best_score:
+                            best_score = score
+                            best_host = potential_host
+
+                    hosts[course] = best_host
+                    distances[course] = self.distances[(team.id, best_host.id)]
+
+                    # Füge mich als Gast zu diesem Host hinzu
+                    guests_per_host[best_host.id].append(team)
+
+            team_total_distance = sum(distances.values())
+            total_distance += team_total_distance
+
+            assignment = {
+                'team': team,
+                'hosts': hosts,
+                'course_hosted': my_hosting_course,
+                'distances': distances,
+                'total_distance': team_total_distance
+            }
+            solution['assignments'].append(assignment)
+
+        # SCHRITT 3: Berechne Statistiken und validiere
+        avg_distance = total_distance / n_teams
+
+        logger.info(f"✅ Running Dinner Lösung erstellt:")
         logger.info(
-            f"✅ Heuristik-Lösung erstellt: {len(solution['assignments'])} Teams")
+            f"   📊 {n_teams} Teams, {total_distance:.1f}km total, {avg_distance:.1f}km Ø")
+
+        # Validierung: Jeder Host sollte 3-4 Gäste haben
+        for course in courses:
+            hosts_in_course = host_teams_by_course[course]
+            logger.info(f"   🏠 {course}: {len(hosts_in_course)} Hosts")
+            for host in hosts_in_course:
+                guest_count = len(guests_per_host[host.id])
+                logger.info(f"      - {host.name}: {guest_count} Gäste")
+
+        solution['objective_value'] = total_distance
+        solution['travel_times'] = {course: avg_distance for course in courses}
+
         return solution
 
     def optimize(self) -> Dict:
@@ -445,36 +471,30 @@ class RunningDinnerOptimizer:
             # 2. Berechne Entfernungen
             self.calculate_distances()
 
-            # Für zu viele Teams verwende direkt Heuristik
-            if len(self.teams) > 9:
-                logger.warning(
-                    f"⚠️ {len(self.teams)} Teams: Verwende Heuristik statt MIP")
-                return self.heuristic_fallback()
+            # Für kleine Anzahl Teams (≤6) versuche MIP
+            if len(self.teams) <= 6:
+                logger.info(
+                    f"🎯 {len(self.teams)} Teams: Versuche MIP-Optimierung")
+                try:
+                    # 3. Erstelle MIP-Model
+                    self.create_mip_model()
 
-            # 3. Erstelle MIP-Model
-            self.create_mip_model()
+                    # 4. Füge Constraints hinzu
+                    self.add_constraints()
 
-            # 4. Füge Constraints hinzu
-            self.add_constraints()
+                    # 5. Löse Problem
+                    if self.solve():
+                        solution = self.extract_solution()
+                        logger.info("🎉 MIP-Optimierung erfolgreich!")
+                        return solution
+                except Exception as mip_error:
+                    logger.warning(f"⚠️ MIP fehlgeschlagen: {mip_error}")
 
-            # 5. Löse Problem
-            if not self.solve():
-                logger.warning("⚠️ MIP fehlgeschlagen, verwende Heuristik")
-                return self.heuristic_fallback()
-
-            # 6. Extrahiere Lösung
-            solution = self.extract_solution()
-
-            logger.info("🎉 MIP-Optimierung erfolgreich abgeschlossen!")
-            return solution
+            # Für alle anderen Fälle: Verwende optimierten Running Dinner Algorithmus
+            logger.info(
+                f"🍽️ {len(self.teams)} Teams: Verwende Running Dinner Algorithmus")
+            return self.simple_running_dinner_solution()
 
         except Exception as e:
             logger.error(f"❌ Fehler bei Optimierung: {str(e)}")
-            logger.info("🔄 Verwende Heuristik-Fallback...")
-            try:
-                return self.heuristic_fallback()
-            except Exception as fallback_error:
-                logger.error(
-                    f"❌ Auch Heuristik fehlgeschlagen: {str(fallback_error)}")
-                raise ValueError(
-                    f"Beide Optimierungsverfahren fehlgeschlagen: MIP: {str(e)}, Heuristik: {str(fallback_error)}")
+            raise ValueError(f"Optimierung fehlgeschlagen: {str(e)}")

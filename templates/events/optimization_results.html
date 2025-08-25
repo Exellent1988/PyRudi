@@ -482,10 +482,10 @@ const teamData = [
     {
         "id": {{ assignment.team.id }},
         "name": "{{ assignment.team.name|escapejs }}",
-        "address": "{{ assignment.team.address|escapejs }}",
+        "address": "{{ assignment.team.home_address|default:'München'|escapejs }}",
         "course": "{{ assignment.course }}",
-        "lat": {% cycle 48.1351 48.1365 48.1378 48.1392 48.1405 48.1418 %},
-        "lng": {% cycle 11.5820 11.5835 11.5850 11.5865 11.5880 11.5895 %},
+        "lat": {% cycle 48.1351 48.1365 48.1378 48.1392 48.1405 48.1418 48.1425 48.1432 48.1445 48.1458 48.1471 48.1484 %},
+        "lng": {% cycle 11.5820 11.5835 11.5850 11.5865 11.5880 11.5895 11.5910 11.5925 11.5940 11.5955 11.5970 11.5985 %},
         "totalDistance": {% if assignment.total_distance %}{{ assignment.total_distance }}{% else %}0{% endif %},
         "preferenceScore": {% if assignment.preference_score %}{{ assignment.preference_score }}{% else %}0{% endif %},
         "hosts": {

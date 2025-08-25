@@ -640,11 +640,15 @@ def start_optimization(request, event_id):
 
             # Füge Gäste hinzu (wenn das Team hostet)
             if course_hosted:
-                # Finde alle Teams die zu diesem Host kommen
+                # Finde alle Teams die zu diesem Host kommen (korrekte Logik)
                 guest_teams = []
-                for other_assignment in solution['assignments']:
-                    if other_assignment['hosts'].get(course_hosted) == team and other_assignment['team'] != team:
-                        guest_teams.append(other_assignment['team'])
+                for other_assignment_data in solution['assignments']:
+                    other_team = other_assignment_data['team']
+                    other_hosts = other_assignment_data['hosts']
+
+                    # Wenn das andere Team zu mir als Host für meinen Kurs kommt
+                    if other_hosts.get(course_hosted) == team and other_team != team:
+                        guest_teams.append(other_team)
 
                 if guest_teams:
                     assignment.guests.set(guest_teams)

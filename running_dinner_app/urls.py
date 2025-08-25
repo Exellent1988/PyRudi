@@ -64,6 +64,7 @@ urlpatterns = [
     # Web URLs
     path('events/', include('events.urls')),
     path('accounts/', include('accounts.urls')),
+    # Navigation URLs in Admin verfügbar
 
     # Home
     path('', home_view, name='home'),
