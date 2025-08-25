@@ -571,28 +571,28 @@ def start_optimization(request, event_id):
         # Lösche alle alten OptimizationRuns und TeamAssignments für dieses Event
         from optimization.models import OptimizationRun, TeamAssignment
         from django.utils import timezone
-        import random
-        
+        from .optimization import RunningDinnerOptimizer
+        import logging
+
+        logger = logging.getLogger(__name__)
+
         # Lösche alte Optimierungen
         old_runs = OptimizationRun.objects.filter(event=event)
-        old_assignments_count = TeamAssignment.objects.filter(optimization_run__event=event).count()
+        old_assignments_count = TeamAssignment.objects.filter(
+            optimization_run__event=event).count()
         old_runs.delete()  # Löscht auch TeamAssignments durch CASCADE
-        
-        print(f"🗑️ {old_assignments_count} alte Team-Zuweisungen gelöscht")
 
-        # Hole alle bestätigten Teams
-        confirmed_teams_list = list(event.team_registrations.filter(
-            status='confirmed').select_related('team'))
-        team_count = len(confirmed_teams_list)
-        
-        if team_count < 3:
-            raise ValueError(f"Mindestens 3 Teams erforderlich, aber nur {team_count} bestätigt")
+        logger.info(
+            f"🗑️ {old_assignments_count} alte Team-Zuweisungen gelöscht")
+
+        # Erstelle und konfiguriere Optimizer
+        optimizer = RunningDinnerOptimizer(event)
 
         # Erstelle neuen OptimizationRun
         optimization_run = OptimizationRun.objects.create(
             event=event,
             status='running',
-            algorithm='genetic',
+            algorithm='mip_pulp',  # Mixed-Integer Programming mit PuLP
             started_at=timezone.now(),
             log_data={
                 'initiated_by': request.user.username,
@@ -600,146 +600,74 @@ def start_optimization(request, event_id):
                 'max_distance_km': float(event.max_distance_km),
                 'groups_per_course': event.groups_per_course,
                 'team_size': event.team_size,
-                'total_teams': team_count,
-                'old_assignments_deleted': old_assignments_count
+                'old_assignments_deleted': old_assignments_count,
+                'algorithm': 'Mixed-Integer Programming (MIP)',
+                'solver': 'PuLP CBC'
             }
         )
 
-        # SCHRITT 1: Wähle Host-Teams für jeden Kurs basierend auf Präferenzen
-        courses = ['appetizer', 'main_course', 'dessert']
-        hosts_per_course = {}
-        teams_per_course = max(1, team_count // 3)  # Mindestens 1 Team pro Kurs
-        
-        # Shuffle teams für zufällige Verteilung
-        available_teams = confirmed_teams_list.copy()
-        random.shuffle(available_teams)
-        
-        print(f"🎯 Verteile {team_count} Teams auf {len(courses)} Kurse ({teams_per_course} Teams pro Kurs)")
-        
-        # Weise Teams als Hosts zu basierend auf Präferenzen
-        for course in courses:
-            hosts_per_course[course] = []
-            
-            # Finde Teams die diesen Kurs hosten können/wollen
-            preferred_teams = [
-                reg for reg in available_teams
-                if getattr(reg, f'can_host_{course}', True) or reg.preferred_course == course
-            ]
-            
-            # Falls nicht genug bevorzugte Teams, nimm verfügbare Teams
-            if len(preferred_teams) < teams_per_course:
-                preferred_teams = available_teams[:teams_per_course]
-            
-            # Wähle Teams als Hosts für diesen Kurs
-            selected_hosts = preferred_teams[:teams_per_course]
-            hosts_per_course[course] = selected_hosts
-            
-            # Entferne ausgewählte Teams aus verfügbaren Teams
-            for host in selected_hosts:
-                if host in available_teams:
-                    available_teams.remove(host)
-            
-            print(f"✅ {course}: {len(selected_hosts)} Host-Teams ausgewählt")
+        # STARTE MIP-OPTIMIERUNG
+        logger.info("🚀 Starte professionelle MIP-Optimierung...")
+        solution = optimizer.optimize()
 
-        # SCHRITT 2: Verteile verbleibende Teams als Gäste
-        remaining_teams = available_teams
-        guests_per_host = {}
-        
-        # Initialisiere Gäste-Listen für jeden Host
-        for course, hosts in hosts_per_course.items():
-            for host in hosts:
-                guests_per_host[host.team.id] = []
-        
-        # Verteile verbleibende Teams gleichmäßig als Gäste
-        for i, guest_team in enumerate(remaining_teams):
-            # Finde Host mit wenigsten Gästen
-            min_guests = float('inf')
-            chosen_host = None
-            
-            for course, hosts in hosts_per_course.items():
-                for host in hosts:
-                    guest_count = len(guests_per_host[host.team.id])
-                    if guest_count < min_guests:
-                        min_guests = guest_count
-                        chosen_host = host
-            
-            if chosen_host:
-                guests_per_host[chosen_host.team.id].append(guest_team)
+        team_count = len(solution['assignments'])
+        total_distance = sum([assignment['total_distance']
+                             for assignment in solution['assignments']])
 
-        # SCHRITT 3: Erstelle TeamAssignments für alle Teams
-        total_distance = 0
-        
-        for registration in confirmed_teams_list:
-            team = registration.team
-            
-            # Bestimme wo dieses Team hostet (falls es hostet)
-            hosting_course = None
-            for course, hosts in hosts_per_course.items():
-                if registration in hosts:
-                    hosting_course = course
-                    break
-            
-            # Bestimme Host-Teams für jeden Kurs
-            hosts_appetizer = None
-            hosts_main_course = None
-            hosts_dessert = None
-            
-            for course, hosts in hosts_per_course.items():
-                if course == 'appetizer':
-                    hosts_appetizer = hosts[0].team if hosts else None
-                elif course == 'main_course':
-                    hosts_main_course = hosts[0].team if hosts else None
-                elif course == 'dessert':
-                    hosts_dessert = hosts[0].team if hosts else None
-            
-            # Wenn Team selbst hostet, setze entsprechenden Host auf None
-            if hosting_course == 'appetizer':
-                hosts_appetizer = None
-            elif hosting_course == 'main_course':
-                hosts_main_course = None
-            elif hosting_course == 'dessert':
-                hosts_dessert = None
-            
-            # Simuliere Entfernungen
-            dist_appetizer = round(random.uniform(0.5, 3.0), 1) if hosts_appetizer else 0
-            dist_main = round(random.uniform(0.5, 3.5), 1) if hosts_main_course else 0
-            dist_dessert = round(random.uniform(0.5, 2.8), 1) if hosts_dessert else 0
-            team_total_dist = dist_appetizer + dist_main + dist_dessert
-            total_distance += team_total_dist
-            
+        # Konvertiere MIP-Lösung zu Django-Modellen
+        for assignment_data in solution['assignments']:
+            team = assignment_data['team']
+            hosts = assignment_data['hosts']
+            course_hosted = assignment_data['course_hosted']
+            distances = assignment_data['distances']
+
             # Erstelle TeamAssignment
             assignment = TeamAssignment.objects.create(
                 optimization_run=optimization_run,
                 team=team,
-                course=hosting_course or 'guest',  # 'guest' wenn Team nicht hostet
-                hosts_appetizer=hosts_appetizer,
-                hosts_main_course=hosts_main_course,
-                hosts_dessert=hosts_dessert,
-                distance_to_appetizer=dist_appetizer,
-                distance_to_main_course=dist_main,
-                distance_to_dessert=dist_dessert,
-                total_distance=team_total_dist,
-                preference_score=round(random.uniform(75.0, 95.0), 1)
+                course=course_hosted or 'guest',  # Kurs den das Team hostet
+                hosts_appetizer=hosts.get('appetizer'),
+                hosts_main_course=hosts.get('main_course'),
+                hosts_dessert=hosts.get('dessert'),
+                distance_to_appetizer=distances.get('appetizer', 0),
+                distance_to_main_course=distances.get('main_course', 0),
+                distance_to_dessert=distances.get('dessert', 0),
+                total_distance=assignment_data['total_distance'],
+                # Bessere Scores für kürzere Wege
+                preference_score=round(
+                    95.0 - (assignment_data['total_distance'] * 2), 1)
             )
-            
-            # Füge Gäste hinzu (falls das Team hostet)
-            if hosting_course and team.id in guests_per_host:
-                guest_teams = [reg.team for reg in guests_per_host[team.id]]
-                assignment.guests.set(guest_teams)
-                print(f"🏠 Team '{team.name}' hostet {hosting_course} für {len(guest_teams)} Gäste")
+
+            # Füge Gäste hinzu (wenn das Team hostet)
+            if course_hosted:
+                # Finde alle Teams die zu diesem Host kommen
+                guest_teams = []
+                for other_assignment in solution['assignments']:
+                    if other_assignment['hosts'].get(course_hosted) == team and other_assignment['team'] != team:
+                        guest_teams.append(other_assignment['team'])
+
+                if guest_teams:
+                    assignment.guests.set(guest_teams)
+                    logger.info(
+                        f"🏠 Team '{team.name}' hostet {course_hosted} für {len(guest_teams)} Gäste")
 
         # Optimierung abschließen
         optimization_run.status = 'completed'
         optimization_run.completed_at = timezone.now()
         optimization_run.total_distance = round(total_distance, 1)
-        optimization_run.objective_value = round(random.uniform(80.0, 95.0), 1)
-        optimization_run.iterations_completed = random.randint(150, 300)
-        optimization_run.execution_time = round(random.uniform(1.2, 4.8), 1)
+        optimization_run.objective_value = round(
+            solution['objective_value'], 1)
+        optimization_run.iterations_completed = 1  # MIP ist exakt, keine Iterationen
+        optimization_run.execution_time = round(
+            (timezone.now() - optimization_run.started_at).total_seconds(), 1)
         optimization_run.log_data.update({
             'optimization_completed': True,
             'routes_created': team_count,
             'avg_distance_per_team': round(total_distance / team_count, 2),
-            'hosts_distribution': {course: len(hosts) for course, hosts in hosts_per_course.items()}
+            'mip_objective_value': solution['objective_value'],
+            'penalties': solution['penalties'],
+            'travel_times': solution['travel_times'],
+            'hosting_distribution': solution['hosting']
         })
         optimization_run.save()
 
@@ -749,8 +677,8 @@ def start_optimization(request, event_id):
 
         messages.success(
             request,
-            f'Optimierung erfolgreich abgeschlossen! {confirmed_teams} Teams optimiert. '
-            'Die Ergebnisse können nun an die Teams gesendet werden.'
+            f'Optimierung erfolgreich abgeschlossen! {team_count} Teams optimiert mit '
+            f'{optimization_run.algorithm}. Die Ergebnisse können nun an die Teams gesendet werden.'
         )
 
     except Exception as e:
