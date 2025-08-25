@@ -149,7 +149,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if event.can_user_manage_teams:user %}
+                                        {% if user_can_manage_teams %}
                                         <div class="dropdown">
                                             <button class="btn btn-outline-primary btn-sm dropdown-toggle" 
                                                     data-bs-toggle="dropdown">
@@ -214,10 +214,13 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        {% if event.can_user_run_optimization:user %}
-                        <button class="btn btn-success">
-                            <i class="bi bi-cpu"></i> Optimierung starten
-                        </button>
+                        {% if user_can_run_optimization %}
+                        <form method="post" action="{% url 'events:start_optimization' event_id=event.id %}" onsubmit="return confirm('Optimierung für {{ stats.confirmed_teams }} Teams starten? Dieser Vorgang kann nicht rückgängig gemacht werden.')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-cpu"></i> Optimierung starten
+                            </button>
+                        </form>
                         {% endif %}
                         
                         <a href="{% url 'events:event_detail' event_id=event.id %}" class="btn btn-outline-primary">
@@ -302,6 +305,84 @@
                 </div>
             </div>
             {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Edit Event Modal -->
+<div class="modal fade" id="editEventModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Event bearbeiten</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'events:update_event' event_id=event.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="edit_name" class="form-label">Event-Name</label>
+                            <input type="text" class="form-control" id="edit_name" name="name" value="{{ event.name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_city" class="form-label">Stadt</label>
+                            <input type="text" class="form-control" id="edit_city" name="city" value="{{ event.city }}" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="edit_description" class="form-label">Beschreibung</label>
+                            <textarea class="form-control" id="edit_description" name="description" rows="3">{{ event.description }}</textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_event_date" class="form-label">Event-Datum</label>
+                            <input type="date" class="form-control" id="edit_event_date" name="event_date" value="{{ event.event_date|date:'Y-m-d' }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_max_teams" class="form-label">Max. Teams</label>
+                            <input type="number" class="form-control" id="edit_max_teams" name="max_teams" value="{{ event.max_teams }}" min="3" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_price" class="form-label">Preis pro Person (€)</label>
+                            <input type="number" class="form-control" id="edit_price" name="price_per_person" value="{{ event.price_per_person }}" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_appetizer_time" class="form-label">Vorspeise Zeit</label>
+                            <input type="time" class="form-control" id="edit_appetizer_time" name="appetizer_time" value="{{ event.appetizer_time|time:'H:i' }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_main_time" class="form-label">Hauptgang Zeit</label>
+                            <input type="time" class="form-control" id="edit_main_time" name="main_course_time" value="{{ event.main_course_time|time:'H:i' }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_dessert_time" class="form-label">Nachspeise Zeit</label>
+                            <input type="time" class="form-control" id="edit_dessert_time" name="dessert_time" value="{{ event.dessert_time|time:'H:i' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_status" class="form-label">Status</label>
+                            <select class="form-select" id="edit_status" name="status">
+                                <option value="planning" {% if event.status == 'planning' %}selected{% endif %}>Planung</option>
+                                <option value="registration_open" {% if event.status == 'registration_open' %}selected{% endif %}>Anmeldung geöffnet</option>
+                                <option value="registration_closed" {% if event.status == 'registration_closed' %}selected{% endif %}>Anmeldung geschlossen</option>
+                                <option value="optimized" {% if event.status == 'optimized' %}selected{% endif %}>Optimiert</option>
+                                <option value="in_progress" {% if event.status == 'in_progress' %}selected{% endif %}>Läuft</option>
+                                <option value="completed" {% if event.status == 'completed' %}selected{% endif %}>Abgeschlossen</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input" type="checkbox" id="edit_is_public" name="is_public" {% if event.is_public %}checked{% endif %}>
+                                <label class="form-check-label" for="edit_is_public">
+                                    Öffentlich sichtbar
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

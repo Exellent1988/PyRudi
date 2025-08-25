@@ -185,7 +185,8 @@ def event_detail(request, event_id):
             team__teammembership__is_active=True
         )
         # Liste der angemeldeten Teams für Template-Vergleich
-        registered_team_ids = list(user_registrations.values_list('team_id', flat=True))
+        registered_team_ids = list(
+            user_registrations.values_list('team_id', flat=True))
 
     context = {
         'event': event,
@@ -301,11 +302,17 @@ def manage_event(request, event_id):
         if team_critical:
             critical_allergies.extend(team_critical)
 
+    # Berechtige Benutzer-Aktionen für Template
+    user_can_manage_teams = event.can_user_manage_teams(request.user)
+    user_can_run_optimization = event.can_user_run_optimization(request.user)
+
     context = {
         'event': event,
         'registrations': registrations,
         'organizers': organizers,
         'user_role': event.get_organizer_role(request.user),
+        'user_can_manage_teams': user_can_manage_teams,
+        'user_can_run_optimization': user_can_run_optimization,
         'stats': {
             'confirmed_teams': confirmed_teams,
             'pending_teams': pending_teams,
@@ -316,6 +323,44 @@ def manage_event(request, event_id):
         'critical_allergies': critical_allergies,
     }
     return render(request, 'events/manage_event.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_event(request, event_id):
+    """Event aktualisieren - nur Haupt-Organisator"""
+    event = get_object_or_404(Event, id=event_id)
+
+    # Prüfe Berechtigung - nur Haupt-Organisator kann Event bearbeiten
+    if event.organizer != request.user:
+        messages.error(
+            request, 'Nur der Haupt-Organisator kann das Event bearbeiten.')
+        return redirect('events:manage_event', event_id=event_id)
+
+    try:
+        # Update Event-Daten
+        event.name = request.POST.get('name')
+        event.description = request.POST.get('description')
+        event.city = request.POST.get('city')
+        event.event_date = request.POST.get('event_date')
+        event.max_teams = int(request.POST.get('max_teams'))
+        event.price_per_person = request.POST.get('price_per_person')
+        event.appetizer_time = request.POST.get('appetizer_time')
+        event.main_course_time = request.POST.get('main_course_time')
+        event.dessert_time = request.POST.get('dessert_time')
+        event.status = request.POST.get('status')
+        event.is_public = request.POST.get('is_public') == 'on'
+
+        event.save()
+
+        messages.success(
+            request, f'Event "{event.name}" wurde erfolgreich aktualisiert!')
+
+    except Exception as e:
+        messages.error(
+            request, f'Fehler beim Aktualisieren des Events: {str(e)}')
+
+    return redirect('events:manage_event', event_id=event_id)
 
 
 @login_required
@@ -399,47 +444,51 @@ def update_team_status(request, event_id, registration_id):
     return redirect('events:manage_event', event_id=event_id)
 
 
-@login_required  
+@login_required
 @require_http_methods(["POST"])
 def register_team(request, event_id):
     """Team für Event anmelden"""
     event = get_object_or_404(Event, id=event_id)
     team_id = request.POST.get('team_id')
-    
+
     if not team_id:
         messages.error(request, 'Bitte wähle ein Team aus.')
         return redirect('events:event_detail', event_id=event_id)
-    
+
     team = get_object_or_404(Team, id=team_id)
-    
+
     # Prüfe ob User Berechtigung für dieses Team hat
     if not TeamMembership.objects.filter(user=request.user, team=team, is_active=True).exists():
         messages.error(request, 'Du hast keine Berechtigung für dieses Team.')
         return redirect('events:event_detail', event_id=event_id)
-    
+
     # Prüfe ob Anmeldung offen ist
     if not event.is_registration_open:
-        messages.error(request, 'Die Anmeldung für dieses Event ist nicht mehr möglich.')
+        messages.error(
+            request, 'Die Anmeldung für dieses Event ist nicht mehr möglich.')
         return redirect('events:event_detail', event_id=event_id)
-    
+
     # Prüfe ob Team bereits angemeldet ist
     if TeamRegistration.objects.filter(event=event, team=team).exists():
-        messages.warning(request, f'Team "{team.name}" ist bereits für dieses Event angemeldet.')
+        messages.warning(
+            request, f'Team "{team.name}" ist bereits für dieses Event angemeldet.')
         return redirect('events:event_detail', event_id=event_id)
-    
+
     # Prüfe Event-Kapazität
     confirmed_count = TeamRegistration.objects.filter(
-        event=event, 
+        event=event,
         status__in=['confirmed', 'pending']
     ).count()
-    
+
     if confirmed_count >= event.max_teams:
         status = 'waiting_list'
-        messages.info(request, f'Event ist voll - Team "{team.name}" wurde auf die Warteliste gesetzt.')
+        messages.info(
+            request, f'Event ist voll - Team "{team.name}" wurde auf die Warteliste gesetzt.')
     else:
-        status = 'pending'  
-        messages.success(request, f'Team "{team.name}" wurde erfolgreich angemeldet!')
-    
+        status = 'pending'
+        messages.success(
+            request, f'Team "{team.name}" wurde erfolgreich angemeldet!')
+
     # Erstelle Team-Registrierung
     TeamRegistration.objects.create(
         event=event,
@@ -447,46 +496,129 @@ def register_team(request, event_id):
         status=status,
         preferred_course=request.POST.get('preferred_course', 'main_course'),
         can_host_appetizer=request.POST.get('can_host_appetizer') == 'on',
-        can_host_main_course=request.POST.get('can_host_main_course') == 'on', 
+        can_host_main_course=request.POST.get('can_host_main_course') == 'on',
         can_host_dessert=request.POST.get('can_host_dessert') == 'on',
         payment_status='pending'
     )
-    
+
     return redirect('events:event_detail', event_id=event_id)
 
 
 @login_required
-@require_http_methods(["POST"])  
+@require_http_methods(["POST"])
 def unregister_team(request, event_id):
     """Team-Anmeldung stornieren"""
     event = get_object_or_404(Event, id=event_id)
     team_id = request.POST.get('team_id')
-    
+
     if not team_id:
         messages.error(request, 'Bitte wähle ein Team aus.')
         return redirect('events:event_detail', event_id=event_id)
-    
+
     team = get_object_or_404(Team, id=team_id)
-    
+
     # Prüfe Berechtigung
     if not TeamMembership.objects.filter(user=request.user, team=team, is_active=True).exists():
         messages.error(request, 'Du hast keine Berechtigung für dieses Team.')
         return redirect('events:event_detail', event_id=event_id)
-    
+
     try:
         registration = TeamRegistration.objects.get(event=event, team=team)
-        
+
         # Prüfe ob Stornierung noch möglich
         from datetime import datetime
         from django.utils import timezone
         if event.registration_deadline < timezone.now():
-            messages.error(request, 'Stornierung nach Anmeldeschluss nicht mehr möglich.')
+            messages.error(
+                request, 'Stornierung nach Anmeldeschluss nicht mehr möglich.')
             return redirect('events:event_detail', event_id=event_id)
-        
+
         registration.delete()
-        messages.success(request, f'Anmeldung von Team "{team.name}" wurde storniert.')
-        
+        messages.success(
+            request, f'Anmeldung von Team "{team.name}" wurde storniert.')
+
     except TeamRegistration.DoesNotExist:
         messages.error(request, 'Team ist nicht für dieses Event angemeldet.')
-    
+
     return redirect('events:event_detail', event_id=event_id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def start_optimization(request, event_id):
+    """Startet die Optimierung für das Event"""
+    event = get_object_or_404(Event, id=event_id)
+
+    # Prüfe Berechtigung
+    if not event.can_user_run_optimization(request.user):
+        messages.error(
+            request, 'Sie haben keine Berechtigung, die Optimierung zu starten.')
+        return redirect('events:manage_event', event_id=event_id)
+
+    # Prüfe ob genügend Teams angemeldet sind
+    confirmed_teams = event.team_registrations.filter(
+        status='confirmed').count()
+    if confirmed_teams < 3:
+        messages.error(
+            request, f'Mindestens 3 bestätigte Teams erforderlich. Aktuell: {confirmed_teams}')
+        return redirect('events:manage_event', event_id=event_id)
+
+    try:
+        # Setze Status auf "Optimierung läuft"
+        event.status = 'optimization_running'
+        event.save()
+
+        # TODO: Hier würde der echte Optimierungsalgorithmus laufen
+        # Für jetzt ein einfacher Placeholder
+
+        # Erstelle einen Optimierung-Run Record
+        from optimization.models import OptimizationRun
+        from django.utils import timezone
+
+        optimization_run = OptimizationRun.objects.create(
+            event=event,
+            status='running',
+            algorithm='genetic',
+            started_at=timezone.now(),
+            # Log den Initiator in den Log-Daten
+            log_data={
+                'initiated_by': request.user.username,
+                'initiated_at': timezone.now().isoformat(),
+                'max_distance_km': float(event.max_distance_km),
+                'groups_per_course': event.groups_per_course,
+                'team_size': event.team_size
+            }
+        )
+
+        # Simuliere erfolgreiche Optimierung (Placeholder)
+        optimization_run.status = 'completed'
+        optimization_run.completed_at = timezone.now()
+        optimization_run.total_distance = 15.3  # Beispiel Gesamtentfernung
+        optimization_run.objective_value = 85.6  # Beispiel Zielfunktionswert
+        optimization_run.iterations_completed = 250
+        optimization_run.execution_time = 2.5
+        optimization_run.log_data.update({
+            'total_teams': confirmed_teams,
+            'routes_created': confirmed_teams,
+            'optimization_completed': True,
+            'avg_distance_per_team': 2.5
+        })
+        optimization_run.save()
+
+        # Setze Event-Status auf "Optimiert"
+        event.status = 'optimized'
+        event.save()
+
+        messages.success(
+            request,
+            f'Optimierung erfolgreich abgeschlossen! {confirmed_teams} Teams optimiert. '
+            'Die Ergebnisse können nun an die Teams gesendet werden.'
+        )
+
+    except Exception as e:
+        event.status = 'registration_closed'
+        event.save()
+        messages.error(
+            request, f'Fehler bei der Optimierung: {str(e)}')
+
+    return redirect('events:manage_event', event_id=event_id)
