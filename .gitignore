@@ -1,6 +1,7 @@
 **/__pycache__/
 **/.pyc
-.log
-.env
+*.log
+*.env
 cursor*.md
-db.sqlite3
+*.sqlite3
+debug.log
