@@ -75,6 +75,7 @@ Passwort: testpass123 (für alle)
 ### 🔄 Testdaten zurücksetzen
 ```bash
 python manage.py migrate accounts 0003  # Entfernt Testdaten
+python manage.py makemigrations --empty accounts  # Entfernt Testdaten
 python manage.py migrate                # Erstellt sie neu
 ```
 
