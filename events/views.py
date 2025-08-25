@@ -986,3 +986,101 @@ def run_additional_optimization(request, event_id):
             request, f'❌ Weitere Optimierung fehlgeschlagen: {str(e)}')
 
     return redirect('events:optimization_results', event_id=event_id)
+
+
+@login_required
+def get_afterparty(request, event_id):
+    """
+    API-Endpoint zum Laden der Afterparty-Daten
+    """
+    event = get_object_or_404(Event, id=event_id)
+    
+    if not event.can_user_manage_event(request.user):
+        return JsonResponse({'error': 'Keine Berechtigung'}, status=403)
+    
+    try:
+        afterparty = event.after_party
+        return JsonResponse({
+            'success': True,
+            'afterparty': {
+                'name': afterparty.name,
+                'start_time': afterparty.start_time.strftime('%H:%M'),
+                'address': afterparty.address,
+                'description': afterparty.description,
+                'contact_info': afterparty.contact_info,
+            }
+        })
+    except Event.after_party.RelatedObjectDoesNotExist:
+        return JsonResponse({
+            'success': True,
+            'afterparty': None
+        })
+
+
+@login_required
+@require_http_methods(["POST"])
+def save_afterparty(request, event_id):
+    """
+    API-Endpoint zum Speichern der Afterparty-Daten
+    """
+    event = get_object_or_404(Event, id=event_id)
+    
+    if not event.can_user_manage_event(request.user):
+        return JsonResponse({'error': 'Keine Berechtigung'}, status=403)
+    
+    try:
+        from events.models import AfterPartyLocation
+        from datetime import time
+        
+        # Parse time from string
+        start_time_str = request.POST.get('start_time', '22:30')
+        try:
+            hour, minute = map(int, start_time_str.split(':'))
+            start_time = time(hour, minute)
+        except ValueError:
+            start_time = time(22, 30)  # Default fallback
+        
+        # Update or create afterparty
+        afterparty, created = AfterPartyLocation.objects.update_or_create(
+            event=event,
+            defaults={
+                'name': request.POST.get('name', ''),
+                'address': request.POST.get('address', ''),
+                'start_time': start_time,
+                'description': request.POST.get('description', ''),
+                'contact_info': request.POST.get('contact_info', ''),
+                'is_active': True
+            }
+        )
+        
+        # Versuche Geocoding für neue/geänderte Adressen
+        if created or afterparty.address != request.POST.get('address', ''):
+            try:
+                from events.routing import get_route_calculator
+                route_calc = get_route_calculator()
+                coords = route_calc.geocode_address(afterparty.address)
+                if coords:
+                    afterparty.latitude = coords[0]
+                    afterparty.longitude = coords[1]
+                    afterparty.save()
+                    logger.info(f"📍 Afterparty geocoded: {afterparty.address} → {coords}")
+            except Exception as e:
+                logger.warning(f"⚠️ Afterparty Geocoding fehlgeschlagen: {e}")
+        
+        action = 'erstellt' if created else 'aktualisiert'
+        messages.success(request, f'Afterparty "{afterparty.name}" {action}')
+        
+        return JsonResponse({
+            'success': True,
+            'afterparty': {
+                'name': afterparty.name,
+                'start_time': afterparty.start_time.strftime('%H:%M'),
+                'address': afterparty.address,
+                'description': afterparty.description,
+                'contact_info': afterparty.contact_info,
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Afterparty speichern fehlgeschlagen: {e}")
+        return JsonResponse({'error': str(e)}, status=500)

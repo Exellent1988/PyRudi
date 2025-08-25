@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.db.models import Count, Q
 from django.utils import timezone
 
-from .models import Event, Course, TeamRegistration, EventOrganizer
+from .models import Event, Course, TeamRegistration, EventOrganizer, GuestKitchen, AfterPartyLocation, TeamGuestKitchenAssignment
 
 
 @admin.register(Course)
@@ -318,6 +318,133 @@ class EventOrganizerAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('user', 'event', 'invited_by')
+
+
+class TeamGuestKitchenAssignmentInline(admin.TabularInline):
+    """Inline für Gastküchen-Zuordnungen"""
+    model = TeamGuestKitchenAssignment
+    extra = 0
+    fields = ('team', 'course', 'is_active', 'notes')
+    readonly_fields = ('assigned_at',)
+
+
+@admin.register(GuestKitchen)
+class GuestKitchenAdmin(admin.ModelAdmin):
+    """Admin für Gastküchen"""
+
+    list_display = (
+        'name', 'event', 'host_team', 'current_teams_display',
+        'max_teams', 'address_short', 'is_active'
+    )
+    list_filter = ('event', 'is_active', 'created_at')
+    search_fields = ('name', 'host_team__name', 'address')
+    ordering = ('-created_at',)
+
+    fieldsets = (
+        (_('Grundinformationen'), {
+            'fields': ('event', 'name', 'host_team', 'is_active')
+        }),
+        (_('Standort'), {
+            'fields': ('address', 'latitude', 'longitude')
+        }),
+        (_('Konfiguration'), {
+            'fields': ('max_teams', 'available_courses')
+        }),
+        (_('Zusätzliche Informationen'), {
+            'fields': ('notes',),
+            'classes': ('collapse',)
+        }),
+        (_('Metadaten'), {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
+
+    readonly_fields = ('created_at',)
+    inlines = [TeamGuestKitchenAssignmentInline]
+
+    def current_teams_display(self, obj):
+        """Aktuelle Team-Anzahl mit Fortschritt"""
+        current = obj.current_teams_count
+        max_teams = obj.max_teams
+        percentage = (current / max_teams * 100) if max_teams > 0 else 0
+
+        color = 'red' if obj.is_full else 'orange' if percentage >= 80 else 'green'
+
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}/{}</span>',
+            color, current, max_teams
+        )
+    current_teams_display.short_description = _('Belegung')
+
+    def address_short(self, obj):
+        """Gekürzte Adresse"""
+        return obj.address[:50] + '...' if len(obj.address) > 50 else obj.address
+    address_short.short_description = _('Adresse')
+
+
+@admin.register(AfterPartyLocation)
+class AfterPartyLocationAdmin(admin.ModelAdmin):
+    """Admin für Aftershow-Locations"""
+
+    list_display = (
+        'name', 'event', 'start_time', 'address_short', 'is_active'
+    )
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('name', 'event__name', 'address')
+    ordering = ('-created_at',)
+
+    fieldsets = (
+        (_('Grundinformationen'), {
+            'fields': ('event', 'name', 'start_time', 'is_active')
+        }),
+        (_('Standort'), {
+            'fields': ('address', 'latitude', 'longitude')
+        }),
+        (_('Details'), {
+            'fields': ('description', 'contact_info')
+        }),
+        (_('Metadaten'), {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
+
+    readonly_fields = ('created_at',)
+
+    def address_short(self, obj):
+        """Gekürzte Adresse"""
+        return obj.address[:50] + '...' if len(obj.address) > 50 else obj.address
+    address_short.short_description = _('Adresse')
+
+
+@admin.register(TeamGuestKitchenAssignment)
+class TeamGuestKitchenAssignmentAdmin(admin.ModelAdmin):
+    """Admin für Team-Gastküchen-Zuordnungen"""
+
+    list_display = (
+        'team', 'guest_kitchen', 'course', 'is_active', 'assigned_at'
+    )
+    list_filter = ('course', 'is_active', 'assigned_at',
+                   'guest_kitchen__event')
+    search_fields = ('team__name', 'guest_kitchen__name')
+    ordering = ('-assigned_at',)
+
+    fieldsets = (
+        (_('Zuordnung'), {
+            'fields': ('team', 'guest_kitchen', 'course', 'is_active')
+        }),
+        (_('Zusätzliche Informationen'), {
+            'fields': ('notes',),
+            'classes': ('collapse',)
+        }),
+        (_('Metadaten'), {
+            'fields': ('assigned_at',),
+            'classes': ('collapse',)
+        }),
+    )
+
+    readonly_fields = ('assigned_at',)
 
 
 # Dashboard anpassungen

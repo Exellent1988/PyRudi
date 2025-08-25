@@ -407,3 +407,187 @@ class EventOrganizer(models.Model):
     @property
     def can_run_optimization(self):
         return self.role in ['admin', 'moderator'] or self.has_permission('run_optimization')
+
+
+class GuestKitchen(models.Model):
+    """
+    Gastküchen für Teams die zu weit weg wohnen
+    Der Host der Gastküche ist selbst Teilnehmer
+    """
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name='guest_kitchens',
+        verbose_name=_('Event')
+    )
+    name = models.CharField(
+        _('Name der Gastküche'),
+        max_length=100,
+        help_text=_('z.B. "Küche bei Familie Schmidt"')
+    )
+    host_team = models.ForeignKey(
+        'accounts.Team',
+        on_delete=models.CASCADE,
+        related_name='hosted_guest_kitchens',
+        verbose_name=_('Gastgeber-Team'),
+        help_text=_('Das Team das seine Küche zur Verfügung stellt')
+    )
+    address = models.TextField(
+        _('Adresse'),
+        help_text=_('Vollständige Adresse der Gastküche')
+    )
+    latitude = models.DecimalField(
+        _('Breitengrad'),
+        max_digits=10,
+        decimal_places=8,
+        null=True,
+        blank=True
+    )
+    longitude = models.DecimalField(
+        _('Längengrad'),
+        max_digits=11,
+        decimal_places=8,
+        null=True,
+        blank=True
+    )
+    max_teams = models.PositiveIntegerField(
+        _('Max. Teams'),
+        default=3,
+        help_text=_('Maximale Anzahl Teams die diese Küche nutzen können')
+    )
+    available_courses = models.JSONField(
+        _('Verfügbare Kurse'),
+        default=list,
+        help_text=_('Kurse für die diese Küche genutzt werden kann'),
+        blank=True
+    )
+    notes = models.TextField(
+        _('Notizen'),
+        blank=True,
+        help_text=_('Zusätzliche Informationen zur Küche')
+    )
+    is_active = models.BooleanField(_('Aktiv'), default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Gastküche')
+        verbose_name_plural = _('Gastküchen')
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} (Host: {self.host_team.name})"
+
+    @property
+    def current_teams_count(self):
+        """Anzahl Teams die diese Küche aktuell nutzen"""
+        return self.using_teams.filter(is_active=True).count()
+
+    @property
+    def is_full(self):
+        """Prüft ob die Küche voll belegt ist"""
+        return self.current_teams_count >= self.max_teams
+
+    def can_host_course(self, course):
+        """Prüft ob diese Küche einen bestimmten Kurs hosten kann"""
+        return not self.available_courses or course in self.available_courses
+
+
+class AfterPartyLocation(models.Model):
+    """
+    Aftershow-Party Location - finaler Treffpunkt für alle Teams
+    """
+    event = models.OneToOneField(
+        Event,
+        on_delete=models.CASCADE,
+        related_name='after_party',
+        verbose_name=_('Event')
+    )
+    name = models.CharField(
+        _('Name der Location'),
+        max_length=100,
+        help_text=_('z.B. "Bar Centrale", "Vereinsheim"')
+    )
+    address = models.TextField(
+        _('Adresse'),
+        help_text=_('Vollständige Adresse der Aftershow-Location')
+    )
+    latitude = models.DecimalField(
+        _('Breitengrad'),
+        max_digits=10,
+        decimal_places=8,
+        null=True,
+        blank=True
+    )
+    longitude = models.DecimalField(
+        _('Längengrad'),
+        max_digits=11,
+        decimal_places=8,
+        null=True,
+        blank=True
+    )
+    start_time = models.TimeField(
+        _('Beginn'),
+        help_text=_('Uhrzeit ab wann die Aftershow beginnt')
+    )
+    description = models.TextField(
+        _('Beschreibung'),
+        blank=True,
+        help_text=_('Was erwartet die Teams dort?')
+    )
+    contact_info = models.TextField(
+        _('Kontakt-Info'),
+        blank=True,
+        help_text=_('Telefon, Website, etc.')
+    )
+    is_active = models.BooleanField(_('Aktiv'), default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Aftershow-Location')
+        verbose_name_plural = _('Aftershow-Locations')
+
+    def __str__(self):
+        return f"{self.name} - {self.event.name}"
+
+
+class TeamGuestKitchenAssignment(models.Model):
+    """
+    Zuordnung welches Team welche Gastküche für welchen Kurs nutzt
+    """
+    team = models.ForeignKey(
+        'accounts.Team',
+        on_delete=models.CASCADE,
+        related_name='guest_kitchen_assignments',
+        verbose_name=_('Team')
+    )
+    guest_kitchen = models.ForeignKey(
+        GuestKitchen,
+        on_delete=models.CASCADE,
+        related_name='using_teams',
+        verbose_name=_('Gastküche')
+    )
+    course = models.CharField(
+        _('Kurs'),
+        max_length=20,
+        choices=[
+            ('appetizer', _('Vorspeise')),
+            ('main_course', _('Hauptgang')),
+            ('dessert', _('Nachspeise')),
+        ]
+    )
+    is_active = models.BooleanField(_('Aktiv'), default=True)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(
+        _('Notizen'),
+        blank=True
+    )
+
+    class Meta:
+        verbose_name = _('Team-Gastküchen-Zuordnung')
+        verbose_name_plural = _('Team-Gastküchen-Zuordnungen')
+        # Ein Team kann pro Kurs nur eine Gastküche nutzen
+        unique_together = ['team', 'course']
+        ordering = ['course', 'assigned_at']
+
+    def __str__(self):
+        return f"{self.team.name} → {self.guest_kitchen.name} ({self.get_course_display()})"

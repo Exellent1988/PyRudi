@@ -131,9 +131,10 @@ class TeamAdmin(admin.ModelAdmin):
     
     list_display = (
         'name', 'contact_person', 'member_count_display', 'home_address_short',
-        'max_guests', 'team_allergies_display', 'is_active', 'created_at'
+        'has_kitchen_display', 'participation_type_display', 'max_guests', 
+        'team_allergies_display', 'is_active', 'created_at'
     )
-    list_filter = ('is_active', 'max_members', 'created_at')
+    list_filter = ('is_active', 'has_kitchen', 'participation_type', 'max_members', 'created_at')
     search_fields = ('name', 'description', 'contact_person__email', 'home_address')
     ordering = ('-created_at',)
     
@@ -142,7 +143,7 @@ class TeamAdmin(admin.ModelAdmin):
             'fields': ('name', 'description', 'contact_person', 'is_active')
         }),
         (_('Team-Konfiguration'), {
-            'fields': ('max_members', 'max_guests')
+            'fields': ('max_members', 'max_guests', 'has_kitchen', 'participation_type')
         }),
         (_('Adresse & Standort'), {
             'fields': ('home_address', 'latitude', 'longitude'),
@@ -198,6 +199,35 @@ class TeamAdmin(admin.ModelAdmin):
         else:
             return format_html('<span style="color: green;">✓ Keine</span>')
     team_allergies_display.short_description = _('Team-Allergien')
+    
+    def has_kitchen_display(self, obj):
+        """Zeigt Küchen-Status mit Icon"""
+        if obj.has_kitchen:
+            return format_html('<span style="color: green; font-weight: bold;">🏠 Ja</span>')
+        else:
+            return format_html('<span style="color: red; font-weight: bold;">❌ Nein</span>')
+    has_kitchen_display.short_description = _('Küche')
+    
+    def participation_type_display(self, obj):
+        """Zeigt Teilnahme-Art mit Farbe"""
+        colors = {
+            'full': 'green',
+            'kitchen_only': 'blue', 
+            'guest_only': 'orange'
+        }
+        icons = {
+            'full': '👥',
+            'kitchen_only': '🏠',
+            'guest_only': '🍽️'
+        }
+        color = colors.get(obj.participation_type, 'black')
+        icon = icons.get(obj.participation_type, '❓')
+        
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{} {}</span>',
+            color, icon, obj.get_participation_type_display()
+        )
+    participation_type_display.short_description = _('Teilnahme-Art')
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)

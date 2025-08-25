@@ -229,6 +229,11 @@
                         </a>
                         {% endif %}
                         
+                        <!-- Gastküchen & Afterparty Button -->
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#guestKitchensModal">
+                            <i class="bi bi-house-door"></i> Gastküchen & Afterparty
+                        </button>
+                        
                         <a href="{% url 'events:event_detail' event_id=event.id %}" class="btn btn-outline-primary">
                             <i class="bi bi-eye"></i> Event anzeigen
                         </a>
@@ -440,4 +445,281 @@
         </div>
     </div>
 </div>
+
+<!-- Gastküchen & Afterparty Modal -->
+<div class="modal fade" id="guestKitchensModal" tabindex="-1" aria-labelledby="guestKitchensModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="guestKitchensModalLabel">🏠 Gastküchen & Afterparty</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Tabs für verschiedene Bereiche -->
+                <ul class="nav nav-tabs" id="guestKitchenTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="guest-kitchens-tab" data-bs-toggle="tab" data-bs-target="#guest-kitchens" 
+                                type="button" role="tab" aria-controls="guest-kitchens" aria-selected="true">
+                            🏠 Gastküchen
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="after-party-tab" data-bs-toggle="tab" data-bs-target="#after-party" 
+                                type="button" role="tab" aria-controls="after-party" aria-selected="false">
+                            🎉 Afterparty
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="guestKitchenTabsContent">
+                    <!-- Gastküchen Tab -->
+                    <div class="tab-pane fade show active" id="guest-kitchens" role="tabpanel" aria-labelledby="guest-kitchens-tab">
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6>Verfügbare Gastküchen</h6>
+                                    <button class="btn btn-sm btn-primary" onclick="showAddGuestKitchenForm()">
+                                        <i class="bi bi-plus"></i> Gastküche hinzufügen
+                                    </button>
+                                </div>
+                                
+                                <!-- Gastküchen Liste -->
+                                <div id="guestKitchensList">
+                                    <div class="text-muted text-center py-3">
+                                        <i class="bi bi-house-door display-4"></i>
+                                        <p>Lade Gastküchen...</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Gastküche hinzufügen Form (initially hidden) -->
+                                <div id="addGuestKitchenForm" style="display: none;" class="border rounded p-3 mt-3">
+                                    <h6>Neue Gastküche hinzufügen</h6>
+                                    <form id="guestKitchenForm">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Name der Gastküche</label>
+                                                <input type="text" class="form-control" name="name" placeholder="z.B. Küche bei Familie Schmidt" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Gastgeber-Team</label>
+                                                <select class="form-select" name="host_team" required>
+                                                    <option value="">Team auswählen...</option>
+                                                    <!-- Teams werden dynamisch geladen -->
+                                                </select>
+                                            </div>
+                                            <div class="col-12 mt-2">
+                                                <label class="form-label">Adresse</label>
+                                                <textarea class="form-control" name="address" rows="2" placeholder="Vollständige Adresse" required></textarea>
+                                            </div>
+                                            <div class="col-md-4 mt-2">
+                                                <label class="form-label">Max. Teams</label>
+                                                <input type="number" class="form-control" name="max_teams" value="3" min="1" max="10" required>
+                                            </div>
+                                            <div class="col-md-8 mt-2">
+                                                <label class="form-label">Verfügbare Kurse</label>
+                                                <div class="form-check-group d-flex gap-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="available_courses" value="appetizer" id="course_appetizer">
+                                                        <label class="form-check-label" for="course_appetizer">Vorspeise</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="available_courses" value="main_course" id="course_main">
+                                                        <label class="form-check-label" for="course_main">Hauptgang</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="available_courses" value="dessert" id="course_dessert">
+                                                        <label class="form-check-label" for="course_dessert">Nachspeise</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 mt-2">
+                                                <label class="form-label">Notizen (optional)</label>
+                                                <textarea class="form-control" name="notes" rows="2" placeholder="Zusätzliche Informationen zur Küche"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="bi bi-check"></i> Gastküche speichern
+                                            </button>
+                                            <button type="button" class="btn btn-secondary ms-2" onclick="hideAddGuestKitchenForm()">
+                                                Abbrechen
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Afterparty Tab -->
+                    <div class="tab-pane fade" id="after-party" role="tabpanel" aria-labelledby="after-party-tab">
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6>Aftershow-Party konfigurieren</h6>
+                                
+                                <!-- Afterparty Form -->
+                                <form id="afterPartyForm">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Name der Location</label>
+                                            <input type="text" class="form-control" name="name" placeholder="z.B. Bar Centrale" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Beginn</label>
+                                            <input type="time" class="form-control" name="start_time" value="22:30" required>
+                                        </div>
+                                        <div class="col-12 mt-2">
+                                            <label class="form-label">Adresse</label>
+                                            <textarea class="form-control" name="address" rows="2" placeholder="Vollständige Adresse der Location" required></textarea>
+                                        </div>
+                                        <div class="col-12 mt-2">
+                                            <label class="form-label">Beschreibung</label>
+                                            <textarea class="form-control" name="description" rows="3" 
+                                                      placeholder="Was erwartet die Teams dort? Live-Musik, Getränke, etc."></textarea>
+                                        </div>
+                                        <div class="col-12 mt-2">
+                                            <label class="form-label">Kontakt-Info</label>
+                                            <input type="text" class="form-control" name="contact_info" 
+                                                   placeholder="Telefon, Website, etc.">
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="bi bi-check"></i> Afterparty speichern
+                                        </button>
+                                    </div>
+                                </form>
+                                
+                                <!-- Aktuelle Afterparty anzeigen -->
+                                <div id="currentAfterParty" class="mt-4" style="display: none;">
+                                    <div class="alert alert-success">
+                                        <strong>🎉 Aktuelle Afterparty:</strong>
+                                        <div id="afterPartyDetails"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// JavaScript für Gastküchen & Afterparty Management
+function showAddGuestKitchenForm() {
+    document.getElementById('addGuestKitchenForm').style.display = 'block';
+    loadTeamsForGuestKitchen();
+}
+
+function hideAddGuestKitchenForm() {
+    document.getElementById('addGuestKitchenForm').style.display = 'none';
+}
+
+function loadTeamsForGuestKitchen() {
+    // TODO: Teams über AJAX laden
+    console.log('Loading teams for guest kitchen...');
+}
+
+function loadGuestKitchens() {
+    // TODO: Gastküchen über AJAX laden
+    console.log('Loading guest kitchens...');
+}
+
+function loadAfterParty() {
+    // Lade bestehende Afterparty-Daten
+    fetch(`/events/{{ event.id }}/get-afterparty/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.afterparty) {
+                // Fülle Form mit bestehenden Daten
+                const form = document.getElementById('afterPartyForm');
+                form.name.value = data.afterparty.name || '';
+                form.start_time.value = data.afterparty.start_time || '22:30';
+                form.address.value = data.afterparty.address || '';
+                form.description.value = data.afterparty.description || '';
+                form.contact_info.value = data.afterparty.contact_info || '';
+                
+                // Zeige aktuelle Afterparty an
+                showCurrentAfterParty(data.afterparty);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading after party:', error);
+        });
+}
+
+function showCurrentAfterParty(afterparty) {
+    const currentDiv = document.getElementById('currentAfterParty');
+    const detailsDiv = document.getElementById('afterPartyDetails');
+    
+    detailsDiv.innerHTML = `
+        <strong>${afterparty.name}</strong><br>
+        <strong>Start:</strong> ${afterparty.start_time} Uhr<br>
+        <strong>Adresse:</strong> ${afterparty.address}<br>
+        ${afterparty.description ? `<strong>Beschreibung:</strong> ${afterparty.description}<br>` : ''}
+        ${afterparty.contact_info ? `<strong>Kontakt:</strong> ${afterparty.contact_info}` : ''}
+    `;
+    
+    currentDiv.style.display = 'block';
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal Event Listener
+    const guestKitchensModal = document.getElementById('guestKitchensModal');
+    guestKitchensModal.addEventListener('shown.bs.modal', function () {
+        loadGuestKitchens();
+        loadAfterParty();
+    });
+    
+    // Afterparty Form Handler
+    const afterPartyForm = document.getElementById('afterPartyForm');
+    afterPartyForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(afterPartyForm);
+        
+        fetch(`/events/{{ event.id }}/save-afterparty/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Zeige Erfolg
+                showCurrentAfterParty(data.afterparty);
+                
+                // Bootstrap Alert
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+                alertDiv.innerHTML = `
+                    ✅ Afterparty erfolgreich gespeichert!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                afterPartyForm.appendChild(alertDiv);
+                
+                // Auto-remove nach 3 Sekunden
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 3000);
+            } else {
+                // Zeige Fehler
+                alert('Fehler beim Speichern: ' + (data.error || 'Unbekannter Fehler'));
+            }
+        })
+        .catch(error => {
+            console.error('Error saving after party:', error);
+            alert('Fehler beim Speichern der Afterparty');
+        });
+    });
+});
+</script>
+
 {% endblock %}

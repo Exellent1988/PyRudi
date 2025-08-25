@@ -282,6 +282,28 @@ class Team(models.Model):
         related_name='led_teams',
         verbose_name=_('Hauptansprechpartner')
     )
+    
+    # Küchen-Status und Teilnahme-Art
+    has_kitchen = models.BooleanField(
+        _('Hat eigene Küche'),
+        default=True,
+        help_text=_('Teams ohne Küche müssen Gastküchen nutzen wenn sie hosten')
+    )
+    
+    PARTICIPATION_CHOICES = [
+        ('full', _('Vollständige Teilnahme')),
+        ('kitchen_only', _('Nur Gastküche anbieten')),
+        ('guest_only', _('Nur als Gast (kein Hosting)')),
+    ]
+    
+    participation_type = models.CharField(
+        _('Teilnahme-Art'),
+        max_length=20,
+        choices=PARTICIPATION_CHOICES,
+        default='full',
+        help_text=_('Art der Teilnahme am Running Dinner')
+    )
+    
     is_active = models.BooleanField(
         _('Aktiv'),
         default=True
@@ -308,6 +330,26 @@ class Team(models.Model):
     def can_host(self, guest_count):
         """Prüft ob das Team die Anzahl Gäste bewirten kann"""
         return guest_count <= self.max_guests
+    
+    @property
+    def can_participate_as_host(self):
+        """Prüft ob das Team als Host teilnehmen kann"""
+        return self.participation_type in ['full'] and self.is_active
+    
+    @property
+    def can_participate_as_guest(self):
+        """Prüft ob das Team als Gast teilnehmen kann"""
+        return self.participation_type in ['full', 'guest_only'] and self.is_active
+    
+    @property
+    def needs_guest_kitchen(self):
+        """Prüft ob das Team eine Gastküche braucht wenn es hostet"""
+        return not self.has_kitchen and self.can_participate_as_host
+    
+    @property
+    def offers_kitchen_only(self):
+        """Prüft ob das Team nur Küche anbietet ohne selbst teilzunehmen"""
+        return self.participation_type == 'kitchen_only' and self.is_active
 
     @property
     def team_dietary_restrictions(self):

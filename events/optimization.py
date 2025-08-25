@@ -80,19 +80,50 @@ class RunningDinnerOptimizer:
             cache.set(self.log_key, logs, timeout=300)
 
     def load_teams(self):
-        """Lade bestätigte Teams für das Event"""
+        """Lade bestätigte Teams für das Event und zusätzliche Features"""
+        from events.models import GuestKitchen, AfterPartyLocation
+
         self.team_registrations = list(
             self.event.team_registrations.filter(status='confirmed')
             .select_related('team')
         )
-        self.teams = [reg.team for reg in self.team_registrations]
+        
+        # Filtere Teams nach Teilnahme-Art
+        all_teams = [reg.team for reg in self.team_registrations]
+        
+        # Teams die als Host UND Gast teilnehmen können
+        self.teams = [team for team in all_teams if team.can_participate_as_host and team.can_participate_as_guest]
+        
+        # Teams die nur als Gäste teilnehmen
+        self.guest_only_teams = [team for team in all_teams if team.participation_type == 'guest_only']
+        
+        # Teams ohne Küche (brauchen Gastküche wenn sie hosten)
+        self.teams_needing_kitchen = [team for team in self.teams if team.needs_guest_kitchen]
 
         if len(self.teams) < 3:
             raise ValueError(
-                f"Mindestens 3 Teams erforderlich, aber nur {len(self.teams)} bestätigt")
+                f"Mindestens 3 Host-Teams erforderlich, aber nur {len(self.teams)} verfügbar")
+        
+        logger.info(f"🎯 Optimiere {len(self.teams)} Host-Teams für Event '{self.event.name}'")
+        logger.info(f"👥 {len(self.guest_only_teams)} Nur-Gast-Teams verfügbar")
+        logger.info(f"🏠 {len(self.teams_needing_kitchen)} Teams brauchen Gastküche")
+
+        # Lade Gastküchen
+        self.guest_kitchens = list(
+            self.event.guest_kitchens.filter(is_active=True))
+
+        # Lade Afterparty Location
+        try:
+            self.after_party = self.event.after_party
+        except AfterPartyLocation.DoesNotExist:
+            self.after_party = None
 
         logger.info(
             f"🎯 Optimiere {len(self.teams)} Teams für Event '{self.event.name}'")
+        logger.info(f"🏠 {len(self.guest_kitchens)} Gastküchen verfügbar")
+        if self.after_party:
+            logger.info(
+                f"🎉 Afterparty: {self.after_party.name} um {self.after_party.start_time}")
 
     def calculate_distances(self):
         """
@@ -109,6 +140,61 @@ class RunningDinnerOptimizer:
         # Verwende echtes Routing
         route_calculator = get_route_calculator()
         self.distances = route_calculator.calculate_team_distances(self.teams)
+
+        # Distanzen zu Gastküchen
+        self.guest_kitchen_distances = {}
+        if self.guest_kitchens:
+            logger.info(
+                f"🏠 Berechne Routen zu {len(self.guest_kitchens)} Gastküchen...")
+            for kitchen in self.guest_kitchens:
+                if kitchen.latitude and kitchen.longitude:
+                    kitchen_coords = (float(kitchen.latitude),
+                                      float(kitchen.longitude))
+
+                    for team in self.teams:
+                        if team.latitude and team.longitude:
+                            team_coords = (float(team.latitude),
+                                           float(team.longitude))
+                            distance = route_calculator.calculate_walking_distance(
+                                team_coords, kitchen_coords)
+                            self.guest_kitchen_distances[(
+                                team.id, kitchen.id)] = distance
+
+                    # Distanzen zwischen Gastküchen und anderen Gastküchen
+                    for other_kitchen in self.guest_kitchens:
+                        if (other_kitchen.id != kitchen.id and
+                                other_kitchen.latitude and other_kitchen.longitude):
+                            other_coords = (float(other_kitchen.latitude), float(
+                                other_kitchen.longitude))
+                            distance = route_calculator.calculate_walking_distance(
+                                kitchen_coords, other_coords)
+                            self.guest_kitchen_distances[(
+                                f'kitchen_{kitchen.id}', f'kitchen_{other_kitchen.id}')] = distance
+
+        # Distanzen zur Afterparty
+        self.after_party_distances = {}
+        if self.after_party and self.after_party.latitude and self.after_party.longitude:
+            logger.info(
+                f"🎉 Berechne Routen zur Afterparty: {self.after_party.name}")
+            afterparty_coords = (float(self.after_party.latitude), float(
+                self.after_party.longitude))
+
+            # Von Teams zur Afterparty
+            for team in self.teams:
+                if team.latitude and team.longitude:
+                    team_coords = (float(team.latitude), float(team.longitude))
+                    distance = route_calculator.calculate_walking_distance(
+                        team_coords, afterparty_coords)
+                    self.after_party_distances[team.id] = distance
+
+            # Von Gastküchen zur Afterparty
+            for kitchen in self.guest_kitchens:
+                if kitchen.latitude and kitchen.longitude:
+                    kitchen_coords = (float(kitchen.latitude),
+                                      float(kitchen.longitude))
+                    distance = route_calculator.calculate_walking_distance(
+                        kitchen_coords, afterparty_coords)
+                    self.after_party_distances[f'kitchen_{kitchen.id}'] = distance
 
         # Validierung: Prüfe ob alle Entfernungen vorhanden sind
         missing_distances = 0
@@ -540,7 +626,13 @@ class RunningDinnerOptimizer:
         solution['objective_value'] = total_distance
         solution['travel_times'] = {course: avg_distance for course in courses}
 
-        # SCHRITT 4: Post-Optimierung - Verbessere Verteilung und Distanzen
+        # SCHRITT 4: Gastküchen-Zuordnung (optional)
+        if self.guest_kitchens:
+            self._update_progress(3.5, 5, "Gastküchen-Zuordnung",
+                                  "🏠 Weise Teams zu Gastküchen zu...")
+            solution = self.assign_guest_kitchens(solution)
+
+        # SCHRITT 5: Post-Optimierung - Verbessere Verteilung und Distanzen
         self._update_progress(4, 5, "Post-Optimierung",
                               "🔄 Starte Post-Optimierung...")
         logger.info("🔄 Starte Post-Optimierung...")
@@ -548,6 +640,196 @@ class RunningDinnerOptimizer:
             solution, guests_per_host, host_teams_by_course)
 
         return optimized_solution
+
+    def assign_guest_kitchens(self, solution):
+        """
+        Weise Teams automatisch zu Gastküchen zu, wenn dies vorteilhaft ist
+        Logik: Teams mit langen Wegen zu Host-Locations nutzen nähere Gastküchen
+        """
+        logger.info("🏠 Starte automatische Gastküchen-Zuordnung...")
+        
+        # Lösche alte Gastküchen-Zuordnungen für dieses Event
+        from events.models import TeamGuestKitchenAssignment
+        TeamGuestKitchenAssignment.objects.filter(
+            team__in=self.teams,
+            guest_kitchen__event=self.event
+        ).delete()
+        
+        assignments_created = 0
+        distance_savings = 0
+        mandatory_assignments = 0
+
+        # SCHRITT 1: Zwingend erforderliche Zuordnungen (Teams ohne Küche)
+        logger.info("🔴 Verarbeite ZWINGEND erforderliche Gastküchen-Zuordnungen...")
+        
+        for course in self.courses:
+            course_display = {'appetizer': 'Vorspeise', 'main_course': 'Hauptgang', 'dessert': 'Nachspeise'}[course]
+            
+            # Teams ohne Küche die für diesen Kurs hosten
+            mandatory_teams = []
+            for assignment in solution['assignments']:
+                if (assignment['course_hosted'] == course and 
+                    assignment['team'].needs_guest_kitchen):
+                    mandatory_teams.append(assignment)
+            
+            if mandatory_teams:
+                logger.info(f"🔴 {len(mandatory_teams)} Teams ohne Küche hosten {course_display}")
+                
+                # Verfügbare Gastküchen für diesen Kurs  
+                available_kitchens = [
+                    k for k in self.guest_kitchens 
+                    if k.can_host_course(course) and not k.is_full
+                ]
+                
+                if len(available_kitchens) == 0:
+                    raise ValueError(f"KRITISCHER FEHLER: Teams ohne Küche hosten {course_display}, aber keine Gastküchen verfügbar!")
+                
+                # Zuordnung der zwingend erforderlichen Teams
+                kitchen_usage = {k.id: 0 for k in available_kitchens}
+                
+                for assignment in mandatory_teams:
+                    team = assignment['team']
+                    
+                    # Finde beste verfügbare Gastküche
+                    best_kitchen = None
+                    best_distance = float('inf')
+                    
+                    for kitchen in available_kitchens:
+                        if kitchen_usage[kitchen.id] >= kitchen.max_teams:
+                            continue
+                            
+                        distance = self.guest_kitchen_distances.get((team.id, kitchen.id), float('inf'))
+                        if distance < best_distance:
+                            best_distance = distance
+                            best_kitchen = kitchen
+                    
+                    if not best_kitchen:
+                        raise ValueError(f"KRITISCHER FEHLER: Keine Gastküche für Team '{team.name}' verfügbar (alle belegt)!")
+                    
+                    # ZWINGEND ERFORDERLICHE Zuordnung erstellen
+                    try:
+                        kitchen_assignment = TeamGuestKitchenAssignment.objects.create(
+                            team=team,
+                            guest_kitchen=best_kitchen,
+                            course=course,
+                            notes=f"ZWINGEND erforderlich (Team ohne Küche). Distanz: {best_distance:.1f}km"
+                        )
+                        
+                        kitchen_usage[best_kitchen.id] += 1
+                        mandatory_assignments += 1
+                        assignments_created += 1
+                        
+                        logger.info(f"🔴 ZWINGEND: {team.name} → {best_kitchen.name} ({course_display}) - {best_distance:.1f}km")
+                        
+                    except Exception as e:
+                        raise ValueError(f"KRITISCHER FEHLER: Konnte Team '{team.name}' nicht zu Gastküche zuweisen: {e}")
+
+        # SCHRITT 2: Optionale Zuordnungen (Distanz-Optimierung)
+        logger.info("🟡 Verarbeite optionale Gastküchen-Zuordnungen (Distanz-Optimierung)...")
+        
+        # Analysiere jeden Kurs separat für optionale Zuordnungen
+        for course in self.courses:
+            course_display = {'appetizer': 'Vorspeise', 'main_course': 'Hauptgang', 'dessert': 'Nachspeise'}[course]
+            logger.info(f"🍽️ Analysiere optionale {course_display}-Zuordnungen...")
+
+            # Verfügbare Gastküchen für diesen Kurs
+            available_kitchens = [
+                k for k in self.guest_kitchens
+                if k.can_host_course(course) and not k.is_full
+            ]
+
+            if not available_kitchens:
+                logger.info(
+                    f"   ❌ Keine verfügbaren Gastküchen für {course_display}")
+                continue
+
+            # Gastküchen-Kapazitäten tracken
+            kitchen_usage = {k.id: 0 for k in available_kitchens}
+
+            # Analysiere alle Teams für diesen Kurs
+            for assignment in solution['assignments']:
+                team = assignment['team']
+
+                # Skip Teams die selbst hosten für diesen Kurs
+                if assignment['course_hosted'] == course:
+                    continue
+
+                # Host für diesen Kurs
+                host_team = assignment['hosts'].get(course)
+                if not host_team:
+                    continue
+
+                # Berechne ursprüngliche Distanz: Team → Host
+                original_distance = self.distances.get(
+                    (team.id, host_team.id), float('inf'))
+
+                # Finde beste Gastküche für dieses Team
+                best_kitchen = None
+                best_savings = 0
+
+                for kitchen in available_kitchens:
+                    # Prüfe Kapazität
+                    if kitchen_usage[kitchen.id] >= kitchen.max_teams:
+                        continue
+
+                    # Distanz: Team → Gastküche
+                    team_to_kitchen = self.guest_kitchen_distances.get(
+                        (team.id, kitchen.id), float('inf'))
+
+                    # Distanz: Gastküche → Host (falls Team dort nur kocht, nicht isst)
+                    # Für vereinfachte Logik: Team nutzt Gastküche als Location
+
+                    # Ersparnis berechnen (Schwellwert: min. 3km Ersparnis)
+                    savings = original_distance - team_to_kitchen
+
+                    if savings > best_savings and savings >= 3.0:  # Min. 3km Ersparnis
+                        best_kitchen = kitchen
+                        best_savings = savings
+
+                # Zuordnung erstellen wenn vorteilhaft
+                if best_kitchen and best_savings > 0:
+                    try:
+                        kitchen_assignment = TeamGuestKitchenAssignment.objects.create(
+                            team=team,
+                            guest_kitchen=best_kitchen,
+                            course=course,
+                            notes=f"Automatisch zugewiesen. Ersparnis: {best_savings:.1f}km"
+                        )
+
+                        kitchen_usage[best_kitchen.id] += 1
+                        assignments_created += 1
+                        distance_savings += best_savings
+
+                        logger.info(
+                            f"   ✅ {team.name} → {best_kitchen.name} ({course_display}): -{best_savings:.1f}km")
+
+                        # Update die Route im Solution (Team nutzt jetzt Gastküche statt Host-Zuhause)
+                        assignment['guest_kitchen_usage'] = assignment.get(
+                            'guest_kitchen_usage', {})
+                        assignment['guest_kitchen_usage'][course] = {
+                            'kitchen': best_kitchen,
+                            'distance_savings': best_savings,
+                            'original_host': host_team
+                        }
+
+                    except Exception as e:
+                        logger.warning(
+                            f"   ⚠️ Fehler bei Gastküchen-Zuordnung: {e}")
+
+        if assignments_created > 0:
+            logger.info(f"🏠 Gastküchen-Zuordnung abgeschlossen:")
+            logger.info(f"   📊 {assignments_created} Zuordnungen erstellt")
+            if mandatory_assignments > 0:
+                logger.info(f"   🔴 {mandatory_assignments} ZWINGEND erforderlich (Teams ohne Küche)")
+                logger.info(f"   🟡 {assignments_created - mandatory_assignments} optional (Distanz-Optimierung)")
+            logger.info(f"   📉 Gesamt-Ersparnis: {distance_savings:.1f}km")
+        else:
+            if mandatory_assignments > 0:
+                logger.info(f"🏠 {mandatory_assignments} zwingend erforderliche Gastküchen-Zuordnungen erstellt")
+            else:
+                logger.info("🏠 Keine Gastküchen-Zuordnungen erforderlich oder vorteilhaft")
+
+        return solution
 
     def improve_guest_distribution(self, solution, guests_per_host, host_teams_by_course):
         """
@@ -666,11 +948,103 @@ class RunningDinnerOptimizer:
         optimized_solution['assignments'] = improved_assignments
         optimized_solution['objective_value'] = new_total_distance
 
+        # SCHRITT 6: Afterparty-Routen hinzufügen
+        if self.after_party:
+            optimized_solution = self.add_afterparty_routes(optimized_solution)
+
         # Finale Progress-Update
         self._update_progress(5, 5, "Optimierung abgeschlossen",
-                              f"✅ Optimierung erfolgreich! Finale Distanz: {new_total_distance:.1f}km")
+                              f"✅ Optimierung erfolgreich! Finale Distanz: {optimized_solution['objective_value']:.1f}km")
 
         return optimized_solution
+
+    def add_afterparty_routes(self, solution):
+        """
+        Füge Routen zur Afterparty-Location für alle Teams hinzu
+        Route: Letzte Location (Dessert-Host oder eigenes Zuhause) → Afterparty
+        """
+        logger.info(
+            f"🎉 Berechne Routen zur Afterparty: {self.after_party.name}")
+
+        total_afterparty_distance = 0
+        teams_with_routes = 0
+
+        for assignment in solution['assignments']:
+            team = assignment['team']
+
+            # Bestimme die letzte Location für dieses Team
+            if assignment['course_hosted'] == 'dessert':
+                # Team hostet Dessert → startet von eigener Adresse zur Afterparty
+                last_location_id = team.id
+                last_location_name = f"{team.name} (Zuhause)"
+            else:
+                # Team geht zu Dessert-Host → startet von dort zur Afterparty
+                dessert_host = assignment['hosts'].get('dessert')
+                if dessert_host:
+                    last_location_id = dessert_host.id
+                    last_location_name = f"{dessert_host.name} (Dessert-Host)"
+                else:
+                    # Fallback: eigene Adresse
+                    last_location_id = team.id
+                    last_location_name = f"{team.name} (Zuhause)"
+
+            # Prüfe ob Team eine Gastküche für Dessert nutzt
+            guest_kitchen_usage = assignment.get('guest_kitchen_usage', {})
+            if 'dessert' in guest_kitchen_usage:
+                # Team nutzt Gastküche für Dessert
+                guest_kitchen = guest_kitchen_usage['dessert']['kitchen']
+                last_location_id = f'kitchen_{guest_kitchen.id}'
+                last_location_name = f"{guest_kitchen.name} (Gastküche)"
+
+            # Hole Distanz zur Afterparty
+            afterparty_distance = self.after_party_distances.get(
+                last_location_id, 0)
+
+            if afterparty_distance > 0:
+                assignment['afterparty_route'] = {
+                    'from_location': last_location_name,
+                    'to_location': self.after_party.name,
+                    'distance': afterparty_distance,
+                    'start_time': self.after_party.start_time
+                }
+
+                # Füge zur Gesamtdistanz hinzu
+                assignment['total_distance'] = assignment.get(
+                    'total_distance', 0) + afterparty_distance
+                total_afterparty_distance += afterparty_distance
+                teams_with_routes += 1
+
+                logger.info(
+                    f"   🚶 {team.name}: {last_location_name} → {self.after_party.name} ({afterparty_distance:.1f}km)")
+            else:
+                logger.warning(
+                    f"   ⚠️ Keine Afterparty-Route für {team.name} gefunden")
+
+        # Update Gesamtdistanz
+        solution['objective_value'] = solution.get(
+            'objective_value', 0) + total_afterparty_distance
+
+        # Afterparty-Statistiken
+        if teams_with_routes > 0:
+            avg_afterparty_distance = total_afterparty_distance / teams_with_routes
+            solution['afterparty_stats'] = {
+                'total_distance': total_afterparty_distance,
+                'average_distance': avg_afterparty_distance,
+                'teams_count': teams_with_routes,
+                'location': {
+                    'name': self.after_party.name,
+                    'address': self.after_party.address,
+                    'start_time': self.after_party.start_time.strftime('%H:%M') if self.after_party.start_time else None
+                }
+            }
+
+            logger.info(f"🎉 Afterparty-Routen hinzugefügt:")
+            logger.info(
+                f"   📊 {teams_with_routes} Teams, {total_afterparty_distance:.1f}km total")
+            logger.info(
+                f"   📍 Ø Afterparty-Distanz: {avg_afterparty_distance:.1f}km")
+
+        return solution
 
     def run_additional_optimization(self, max_additional_iterations=5):
         """

@@ -357,9 +357,17 @@
                                                     <div class="me-2" style="width: 20px; height: 20px; background-color: #27ae60; border-radius: 50%; border: 2px solid white;"></div>
                                                     <span><strong>Nachspeise-Hosts</strong></span>
                                                 </div>
-                                                <div class="d-flex align-items-center">
+                                                <div class="d-flex align-items-center mb-2">
                                                     <div class="me-2" style="width: 20px; height: 20px; background-color: #3498db; border-radius: 50%; border: 2px solid white;"></div>
                                                     <span><strong>Nur Gäste</strong></span>
+                                                </div>
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <div class="me-2" style="width: 25px; height: 25px; background-color: #8e44ad; border-radius: 4px; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">🏠</div>
+                                                    <span><strong>Gastküchen</strong></span>
+                                                </div>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="me-2" style="width: 30px; height: 30px; background-color: #e74c3c; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">🎉</div>
+                                                    <span><strong>Afterparty</strong></span>
                                                 </div>
                                             </div>
                                             
@@ -548,9 +556,36 @@ const teamData = [
             "main_course": {% if assignment.hosts_main_course %}"{{ assignment.hosts_main_course.name|escapejs }}"{% else %}null{% endif %},
             "dessert": {% if assignment.hosts_dessert %}"{{ assignment.hosts_dessert.name|escapejs }}"{% else %}null{% endif %}
         }
+    }{% if not forloop.last %},{% endif %    }
+{% endfor %}
+];
+
+// Gastküchen-Daten
+const guestKitchensData = [
+{% for kitchen in event.guest_kitchens.all %}
+    {
+        "id": {{ kitchen.id }},
+        "name": "{{ kitchen.name|escapejs }}",
+        "lat": {% if kitchen.latitude %}{{ kitchen.latitude|unlocalize }}{% else %}48.1574{% endif %},
+        "lng": {% if kitchen.longitude %}{{ kitchen.longitude|unlocalize }}{% else %}11.5608{% endif %},
+        "hostTeam": "{{ kitchen.host_team.name|escapejs }}",
+        "maxTeams": {{ kitchen.max_teams }},
+        "currentTeams": {{ kitchen.current_teams_count }},
+        "availableCourses": {{ kitchen.available_courses|safe|default:"[]" }},
+        "address": "{{ kitchen.address|escapejs }}"
     }{% if not forloop.last %},{% endif %}
 {% endfor %}
 ];
+
+// Afterparty-Daten
+const afterpartyData = {% if event.after_party %}{
+    "name": "{{ event.after_party.name|escapejs }}",
+    "lat": {% if event.after_party.latitude %}{{ event.after_party.latitude|unlocalize }}{% else %}48.1351{% endif %},
+    "lng": {% if event.after_party.longitude %}{{ event.after_party.longitude|unlocalize }}{% else %}11.5820{% endif %},
+    "startTime": "{{ event.after_party.start_time|time:'H:i' }}",
+    "address": "{{ event.after_party.address|escapejs }}",
+    "description": "{{ event.after_party.description|escapejs }}"
+}{% else %}null{% endif %};
 
 function initMap() {
     // Initialisiere Karte
@@ -648,6 +683,83 @@ function initMap() {
         
         teamMarkers.push(marker);
     });
+    
+    // Gastküchen-Marker hinzufügen
+    guestKitchensData.forEach(kitchen => {
+        const kitchenIcon = L.divIcon({
+            className: 'kitchen-marker',
+            html: `<div style="
+                background-color: #8e44ad;
+                width: 25px;
+                height: 25px;
+                border-radius: 4px;
+                border: 2px solid white;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 12px;
+                font-weight: bold;
+            ">🏠</div>`,
+            iconSize: [25, 25],
+            iconAnchor: [12, 12]
+        });
+        
+        const marker = L.marker([kitchen.lat, kitchen.lng], { icon: kitchenIcon }).addTo(map);
+        
+        const coursesText = kitchen.availableCourses.length ? 
+            kitchen.availableCourses.map(c => 
+                c === 'appetizer' ? 'Vorspeise' : 
+                c === 'main_course' ? 'Hauptgang' : 'Nachspeise'
+            ).join(', ') : 'Alle Kurse';
+        
+        const popupContent = `
+            <strong>🏠 ${kitchen.name}</strong><br>
+            <strong>Gastgeber:</strong> ${kitchen.hostTeam}<br>
+            <strong>Kapazität:</strong> ${kitchen.currentTeams}/${kitchen.maxTeams} Teams<br>
+            <strong>Verfügbare Kurse:</strong> ${coursesText}<br>
+            <strong>Adresse:</strong> ${kitchen.address}
+        `;
+        marker.bindPopup(popupContent);
+        
+        teamMarkers.push(marker);
+    });
+    
+    // Afterparty-Marker hinzufügen
+    if (afterpartyData) {
+        const afterpartyIcon = L.divIcon({
+            className: 'afterparty-marker',
+            html: `<div style="
+                background-color: #e74c3c;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+            ">🎉</div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+        
+        const marker = L.marker([afterpartyData.lat, afterpartyData.lng], { icon: afterpartyIcon }).addTo(map);
+        
+        const popupContent = `
+            <strong>🎉 ${afterpartyData.name}</strong><br>
+            <strong>Start:</strong> ${afterpartyData.startTime} Uhr<br>
+            <strong>Adresse:</strong> ${afterpartyData.address}<br>
+            ${afterpartyData.description ? `<strong>Beschreibung:</strong> ${afterpartyData.description}` : ''}
+        `;
+        marker.bindPopup(popupContent);
+        
+        teamMarkers.push(marker);
+    }
     
     // Routen zeichnen (wenn aktiviert)
     if (document.getElementById('showRoutes').checked) {
