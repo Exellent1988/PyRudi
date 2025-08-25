@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 from django.http import JsonResponse
+import json
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Count
 from django.db import models
@@ -864,3 +865,45 @@ def adjust_assignment(request, event_id, assignment_id):
             request, f'Fehler beim Anpassen der Zuweisung: {str(e)}')
 
     return redirect('events:optimization_results', event_id=event_id)
+
+
+@login_required
+def get_route_geometry(request, event_id):
+    """
+    API-Endpoint für Route-Geometrie (echte Fußwege für Kartendarstellung)
+    """
+    event = get_object_or_404(Event, id=event_id)
+    
+    # Prüfe Berechtigung
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Keine Berechtigung'}, status=403)
+    
+    # Parameter aus Request
+    start_lat = request.GET.get('start_lat')
+    start_lng = request.GET.get('start_lng') 
+    end_lat = request.GET.get('end_lat')
+    end_lng = request.GET.get('end_lng')
+    
+    if not all([start_lat, start_lng, end_lat, end_lng]):
+        return JsonResponse({'error': 'Fehlende Koordinaten'}, status=400)
+    
+    try:
+        start_coords = (float(start_lat), float(start_lng))
+        end_coords = (float(end_lat), float(end_lng))
+        
+        # Hole Route-Geometrie
+        from .routing import get_route_calculator
+        route_calc = get_route_calculator()
+        
+        route_points = route_calc.get_walking_route_geometry(start_coords, end_coords)
+        
+        return JsonResponse({
+            'success': True,
+            'route_points': route_points,
+            'point_count': len(route_points) if route_points else 0
+        })
+        
+    except ValueError:
+        return JsonResponse({'error': 'Ungültige Koordinaten'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': f'Route-Fehler: {str(e)}'}, status=500)

@@ -37,4 +37,6 @@ urlpatterns = [
          views.send_team_emails, name='send_team_emails'),
     path('<int:event_id>/assignment/<int:assignment_id>/adjust/',
          views.adjust_assignment, name='adjust_assignment'),
+    path('<int:event_id>/route-geometry/',
+         views.get_route_geometry, name='get_route_geometry'),
 ]

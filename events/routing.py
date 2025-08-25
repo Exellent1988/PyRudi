@@ -29,9 +29,9 @@ class RouteCalculator:
 
         self.session = requests.Session()
 
-        # Rate Limiting für fair use
+        # Rate Limiting für fair use (langsamer für weniger API-Fehler)
         self.last_request_time = 0
-        self.min_request_interval = 0.1  # 100ms zwischen Anfragen
+        self.min_request_interval = 1.0  # 1 Sekunde zwischen Anfragen
 
     def get_coordinates_from_address(self, address: str) -> Optional[Tuple[float, float]]:
         """
@@ -66,8 +66,69 @@ class RouteCalculator:
         logger.info(f"📍 Geocoded '{address}' → {lat:.4f}, {lng:.4f}")
         return coords
 
-    def calculate_walking_distance(self, start_coords: Tuple[float, float],
-                                   end_coords: Tuple[float, float]) -> Optional[float]:
+    def get_walking_route_geometry(self, start_coords: Tuple[float, float], 
+                                 end_coords: Tuple[float, float]) -> Optional[list]:
+        """
+        Holt die detaillierte Route-Geometrie für Kartendarstellung
+        Gibt Liste von [lat, lng] Koordinaten zurück
+        """
+        start_lat, start_lng = start_coords
+        end_lat, end_lng = end_coords
+        
+        try:
+            # Rate Limiting
+            current_time = time.time()
+            time_since_last = current_time - self.last_request_time
+            if time_since_last < self.min_request_interval:
+                time.sleep(self.min_request_interval - time_since_last)
+            
+            # 1. Versuche OpenRouteService (bessere Geometrie)
+            if self.api_key:
+                openroute_url = f"{self.openroute_url}/directions/foot-walking"
+                headers = {'Authorization': self.api_key}
+                data = {
+                    "coordinates": [[start_lng, start_lat], [end_lng, end_lat]],
+                    "format": "json",
+                    "geometry": "geojson"  # Wichtig für Route-Geometrie
+                }
+                
+                response = self.session.post(openroute_url, json=data, headers=headers, timeout=15)
+                self.last_request_time = time.time()
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    if 'routes' in result and len(result['routes']) > 0:
+                        # Extrahiere Geometrie-Koordinaten
+                        geometry = result['routes'][0]['geometry']['coordinates']
+                        # Konvertiere [lng, lat] zu [lat, lng] für Leaflet
+                        route_points = [[point[1], point[0]] for point in geometry]
+                        logger.info(f"🗺️ Route-Geometrie: {len(route_points)} Punkte")
+                        return route_points
+                        
+                logger.warning(f"OpenRouteService Geometrie-Fehler (Status {response.status_code})")
+            
+            # 2. Fallback: OSRM (hat auch Geometrie)
+            osrm_url = f"{self.osrm_url}/{start_lng},{start_lat};{end_lng},{end_lat}"
+            response = self.session.get(osrm_url, params={'overview': 'full', 'geometries': 'geojson'}, timeout=15)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if 'routes' in result and len(result['routes']) > 0:
+                    geometry = result['routes'][0]['geometry']['coordinates']
+                    route_points = [[point[1], point[0]] for point in geometry]
+                    logger.info(f"🗺️ OSRM Route-Geometrie: {len(route_points)} Punkte")
+                    return route_points
+            
+            # 3. Fallback: Gerade Linie
+            logger.warning("Keine Route-Geometrie verfügbar, verwende Luftlinie")
+            return [[start_lat, start_lng], [end_lat, end_lng]]
+            
+        except Exception as e:
+            logger.error(f"Route-Geometrie Fehler: {e}")
+            return [[start_lat, start_lng], [end_lat, end_lng]]
+
+    def calculate_walking_distance(self, start_coords: Tuple[float, float], 
+                                 end_coords: Tuple[float, float]) -> Optional[float]:
         """
         Berechnet echte Fußgänger-Entfernung zwischen zwei Koordinaten
         Verwendet OpenRouteService als primäre API, OSRM als Fallback

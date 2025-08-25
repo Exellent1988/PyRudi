@@ -8,6 +8,7 @@ from typing import List, Dict, Tuple, Optional
 from django.utils import timezone
 import pulp
 import logging
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,11 @@ class RunningDinnerOptimizer:
         self.distances = {}  # Simulierte Entfernungen
         self.courses = ['appetizer', 'main_course', 'dessert']
         self.k = 3  # Anzahl Teams pro Event (Host + 2 Gäste)
+        
+        # Progress-Tracking für Live-Updates
+        self.progress_key = f"optimization_progress_{event.id}"
+        self.log_key = f"optimization_log_{event.id}"
+        self._init_progress()
 
         # Penalty-Gewichte für Constraint-Verletzungen
         self.P1 = 100.0  # Penalty für zu wenige Teams (k-1)
@@ -56,37 +62,40 @@ class RunningDinnerOptimizer:
         Verwendet OpenRouteService API für realistische Routen
         """
         from .routing import get_route_calculator
-        
+
         n = len(self.teams)
         logger.info(f"🗺️ Berechne echte Fußgänger-Routen für {n} Teams...")
 
         # Verwende echtes Routing
         route_calculator = get_route_calculator()
         self.distances = route_calculator.calculate_team_distances(self.teams)
-        
+
         # Validierung: Prüfe ob alle Entfernungen vorhanden sind
         missing_distances = 0
         for i, team1 in enumerate(self.teams):
             for j, team2 in enumerate(self.teams):
                 if (team1.id, team2.id) not in self.distances:
-                    logger.warning(f"⚠️ Fehlende Entfernung: {team1.name} → {team2.name}")
+                    logger.warning(
+                        f"⚠️ Fehlende Entfernung: {team1.name} → {team2.name}")
                     # Fallback-Entfernung
                     self.distances[(team1.id, team2.id)] = 2.5
                     missing_distances += 1
-                    
+
         if missing_distances > 0:
-            logger.warning(f"⚠️ {missing_distances} Entfernungen mit Fallback-Werten ergänzt")
-            
+            logger.warning(
+                f"⚠️ {missing_distances} Entfernungen mit Fallback-Werten ergänzt")
+
         # Statistiken
         all_distances = [d for d in self.distances.values() if d > 0]
         if all_distances:
             avg_distance = sum(all_distances) / len(all_distances)
             max_distance = max(all_distances)
             min_distance = min(all_distances)
-            
+
             logger.info(f"📊 Entfernungs-Statistiken:")
             logger.info(f"   Ø Entfernung: {avg_distance:.2f}km")
-            logger.info(f"   Min/Max: {min_distance:.2f}km / {max_distance:.2f}km")
+            logger.info(
+                f"   Min/Max: {min_distance:.2f}km / {max_distance:.2f}km")
             logger.info(f"   Gesamt: {len(all_distances)} Routen berechnet")
         else:
             logger.error("❌ Keine gültigen Entfernungen berechnet!")
@@ -412,7 +421,7 @@ class RunningDinnerOptimizer:
             my_hosting_course = team_hosting_map[team.id]
             hosts = {}
             distances = {}
-            
+
             # Verfolge die aktuelle Position des Teams während der Route
             current_location = team  # Start von der Team-Home-Adresse
 
@@ -433,18 +442,26 @@ class RunningDinnerOptimizer:
                         current_guest_count = len(
                             guests_per_host[potential_host.id])
                         # KORREKT: Distanz von aktueller Position zum Host
-                        distance = self.distances[(current_location.id, potential_host.id)]
+                        distance = self.distances[(
+                            current_location.id, potential_host.id)]
 
-                        # Score = Gästeanzahl * 10 + Entfernung (priorisiere gleichmäßige Verteilung)
-                        score = current_guest_count * 10 + distance
+                        # Verbessertes Scoring: Stark ungleiche Verteilung bestrafen
+                        ideal_guests_per_host = (
+                            n_teams - len(host_teams_by_course[course])) / len(host_teams_by_course[course])
+                        guest_penalty = max(
+                            0, current_guest_count - ideal_guests_per_host) * 20
+
+                        # Score = Gäste-Ungleichgewicht + normalisierte Entfernung
+                        score = guest_penalty + distance
 
                         if score < best_score:
                             best_score = score
                             best_host = potential_host
 
                     hosts[course] = best_host
-                    distances[course] = self.distances[(current_location.id, best_host.id)]
-                    
+                    distances[course] = self.distances[(
+                        current_location.id, best_host.id)]
+
                     # Team bewegt sich zum neuen Host-Standort
                     current_location = best_host
 
@@ -481,7 +498,129 @@ class RunningDinnerOptimizer:
         solution['objective_value'] = total_distance
         solution['travel_times'] = {course: avg_distance for course in courses}
 
-        return solution
+        # SCHRITT 4: Post-Optimierung - Verbessere Verteilung und Distanzen
+        logger.info("🔄 Starte Post-Optimierung...")
+        optimized_solution = self.improve_guest_distribution(
+            solution, guests_per_host, host_teams_by_course)
+
+        return optimized_solution
+
+    def improve_guest_distribution(self, solution, guests_per_host, host_teams_by_course):
+        """
+        Post-Optimierung: Verbessere Gästeverteilung und Gesamtdistanzen
+        durch iterative Neuzuordnung von Gästen
+        """
+        courses = self.courses
+        n_teams = len(self.teams)
+        improved_assignments = solution['assignments'].copy()
+
+        # Mehrere Optimierungsiterationen
+        for iteration in range(3):  # Max 3 Iterationen
+            logger.info(f"🔄 Optimierungs-Iteration {iteration + 1}")
+            improvement_found = False
+
+            for course in courses:
+                hosts_in_course = host_teams_by_course[course]
+                if len(hosts_in_course) < 2:
+                    continue
+
+                # Berechne ideale Gästeanzahl pro Host
+                total_guests_for_course = sum(1 for t in self.teams if
+                                              any(a['course_hosted'] != course and a['hosts'].get(course)
+                                                  for a in improved_assignments if a['team'].id == t.id))
+                ideal_guests = total_guests_for_course / len(hosts_in_course)
+
+                # Finde unausgewogene Hosts
+                overloaded_hosts = []
+                underloaded_hosts = []
+
+                for host in hosts_in_course:
+                    current_guest_count = len(guests_per_host[host.id])
+                    if current_guest_count > ideal_guests + 0.5:
+                        overloaded_hosts.append((host, current_guest_count))
+                    elif current_guest_count < ideal_guests - 0.5:
+                        underloaded_hosts.append((host, current_guest_count))
+
+                # Versuche Gäste von überladenen zu unterladenen Hosts zu verschieben
+                for overloaded_host, _ in overloaded_hosts:
+                    for underloaded_host, _ in underloaded_hosts:
+
+                        # Finde beste Gast-Team zum Verschieben
+                        best_guest_to_move = None
+                        best_improvement = 0
+
+                        current_guests = guests_per_host[overloaded_host.id].copy(
+                        )
+                        for guest_team in current_guests:
+
+                            # Berechne aktuelle Distanz
+                            old_distance = self.distances[(
+                                guest_team.id, overloaded_host.id)]
+                            new_distance = self.distances[(
+                                guest_team.id, underloaded_host.id)]
+
+                            # Improvement = Distanzreduktion
+                            distance_improvement = old_distance - new_distance
+
+                            if distance_improvement > best_improvement:
+                                best_improvement = distance_improvement
+                                best_guest_to_move = guest_team
+
+                        # Führe die beste Verschiebung durch
+                        if best_guest_to_move and best_improvement > 0.1:  # Min. 100m Verbesserung
+                            logger.info(
+                                f"   ↔️ Verschiebe {best_guest_to_move.name}: {overloaded_host.name} → {underloaded_host.name} (-{best_improvement:.2f}km)")
+
+                            # Update guests_per_host
+                            guests_per_host[overloaded_host.id].remove(
+                                best_guest_to_move)
+                            guests_per_host[underloaded_host.id].append(
+                                best_guest_to_move)
+
+                            # Update assignments
+                            for assignment in improved_assignments:
+                                if assignment['team'].id == best_guest_to_move.id:
+                                    old_distance = assignment['distances'][course]
+                                    assignment['hosts'][course] = underloaded_host
+                                    assignment['distances'][course] = new_distance
+                                    assignment['total_distance'] += (
+                                        new_distance - old_distance)
+                                    break
+
+                            improvement_found = True
+                            break
+
+                    if improvement_found:
+                        break
+
+            if not improvement_found:
+                logger.info(f"   ✅ Keine weiteren Verbesserungen gefunden")
+                break
+
+        # Berechne finale Statistiken
+        new_total_distance = sum(a['total_distance']
+                                 for a in improved_assignments)
+        old_total_distance = solution['objective_value']
+        improvement = old_total_distance - new_total_distance
+
+        logger.info(f"🎯 Post-Optimierung abgeschlossen:")
+        logger.info(
+            f"   📉 Distanz: {old_total_distance:.1f}km → {new_total_distance:.1f}km (Δ{improvement:.1f}km)")
+
+        # Update finale Gästeverteilung logs
+        for course in courses:
+            hosts_in_course = host_teams_by_course[course]
+            logger.info(f"   🏠 {course} (optimiert):")
+            for host in hosts_in_course:
+                guest_count = len(guests_per_host[host.id])
+                logger.info(f"      - {host.name}: {guest_count} Gäste")
+
+        # Return improved solution
+        optimized_solution = solution.copy()
+        optimized_solution['assignments'] = improved_assignments
+        optimized_solution['objective_value'] = new_total_distance
+
+        return optimized_solution
 
     def optimize(self) -> Dict:
         """

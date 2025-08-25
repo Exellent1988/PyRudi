@@ -609,34 +609,98 @@ function drawRoutes() {
     routeLines.forEach(line => map.removeLayer(line));
     routeLines = [];
     
+    const courseColors = {
+        'appetizer': '#e74c3c',
+        'main_course': '#f39c12', 
+        'dessert': '#27ae60'
+    };
+    
+    // Zeichne Routen für jedes Team
     teamData.forEach(team => {
-        const courseColors = {
-            'appetizer': '#e74c3c',
-            'main_course': '#f39c12', 
-            'dessert': '#27ae60'
-        };
+        // Verfolge die Route: Home → Vorspeise → Hauptgang → Nachspeise
+        let currentLocation = {lat: team.lat, lng: team.lng, name: team.name};
         
-        // Zeichne Linien zu den Hosting-Standorten
-        Object.keys(team.hosts).forEach(course => {
+        ['appetizer', 'main_course', 'dessert'].forEach(course => {
             if (team.hosts[course] && team.course !== course) {
                 // Finde Host-Team
                 const hostTeam = teamData.find(t => t.name === team.hosts[course]);
                 if (hostTeam) {
-                    const line = L.polyline([
-                        [team.lat, team.lng],
-                        [hostTeam.lat, hostTeam.lng]
-                    ], {
-                        color: courseColors[course],
-                        weight: 2,
-                        opacity: 0.7,
-                        dashArray: '5, 5'
-                    }).addTo(map);
+                    const nextLocation = {lat: hostTeam.lat, lng: hostTeam.lng, name: hostTeam.name};
                     
-                    routeLines.push(line);
+                    // Lade echte Route-Geometrie
+                    loadRouteGeometry(currentLocation, nextLocation, courseColors[course]);
+                    
+                    // Update aktuelle Position für nächsten Gang
+                    currentLocation = nextLocation;
                 }
+            } else if (team.course === course) {
+                // Team hostet diesen Gang - bleibt zuhause (reset zu Home)
+                currentLocation = {lat: team.lat, lng: team.lng, name: team.name};
             }
         });
     });
+}
+
+async function loadRouteGeometry(start, end, color) {
+    try {
+        // Baue API-URL für Route-Geometrie
+        const eventId = {{ event.id }};
+        const url = `/events/${eventId}/route-geometry/?start_lat=${start.lat}&start_lng=${start.lng}&end_lat=${end.lat}&end_lng=${end.lng}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.success && data.route_points && data.route_points.length > 0) {
+            // Zeichne echte Route mit vielen Punkten
+            const line = L.polyline(data.route_points, {
+                color: color,
+                weight: 3,
+                opacity: 0.8,
+                smoothFactor: 1.0
+            }).addTo(map);
+            
+            // Popup mit Route-Info
+            line.bindPopup(`
+                <div class="small">
+                    <strong>Route:</strong> ${start.name} → ${end.name}<br>
+                    <strong>Punkte:</strong> ${data.point_count}<br>
+                    <em>Echte Fußgänger-Route</em>
+                </div>
+            `);
+            
+            routeLines.push(line);
+        } else {
+            // Fallback: Gerade Linie bei API-Fehler
+            console.warn('Route-API Fehler, verwende Luftlinie:', data.error || 'Unbekannt');
+            drawStraightLine(start, end, color);
+        }
+    } catch (error) {
+        console.error('Route-Laden fehlgeschlagen:', error);
+        // Fallback: Gerade Linie
+        drawStraightLine(start, end, color);
+    }
+}
+
+function drawStraightLine(start, end, color) {
+    // Fallback: Einfache gerade Linie
+    const line = L.polyline([
+        [start.lat, start.lng],
+        [end.lat, end.lng]
+    ], {
+        color: color,
+        weight: 2,
+        opacity: 0.7,
+        dashArray: '5, 5'
+    }).addTo(map);
+    
+    line.bindPopup(`
+        <div class="small">
+            <strong>Route:</strong> ${start.name} → ${end.name}<br>
+            <em>Luftlinie (Route-API nicht verfügbar)</em>
+        </div>
+    `);
+    
+    routeLines.push(line);
 }
 
 function updateMapStats() {
