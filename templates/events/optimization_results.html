@@ -871,7 +871,15 @@ async function drawCompleteTeamRoute(team, teamColor, showWaypoints = true) {
                 currentLocation = nextLocation;
             }
         } else if (team.course === course) {
-            // Team hostet selbst - füge Waypoint hinzu aber keine Route
+            // Team hostet selbst - sie sind zuhause!
+            // Setze currentLocation zurück auf Team-Heimadresse
+            currentLocation = {
+                lat: team.lat, 
+                lng: team.lng, 
+                name: team.name,
+                type: 'hosting_' + course
+            };
+            
             if (showWaypoints) {
                 addWaypoint(currentLocation, course, stepNumber++, teamColor);
             }

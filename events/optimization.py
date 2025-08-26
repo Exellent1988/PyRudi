@@ -568,38 +568,52 @@ class RunningDinnerOptimizer:
             # Für jeden Kurs: Finde besten verfügbaren Host (korrekte Route-Berechnung)
             for course in courses:
                 if course == my_hosting_course:
-                    # Ich hoste diesen Kurs selbst - bleibe zuhause
+                    # Ich hoste diesen Kurs selbst - muss nach Hause!
                     hosts[course] = None
-                    distances[course] = 0
-                    # Aktuelle Position bleibt zuhause (Team-Home)
+
+                    # KRITISCHER FIX: Distanz zur Hosting-Location (= Zuhause) berechnen
+                    if current_location.id != team.id:
+                        # Team ist woanders und muss nach Hause
+                        distances[course] = self.distances[(
+                            current_location.id, team.id)]
+                    else:
+                        # Team ist bereits zuhause
+                        distances[course] = 0
+
+                    # Aktuelle Position: Jetzt zuhause (Team-Home)
                     current_location = team
                 else:
-                    # Für andere Kurse: Finde Host aus optimierter Diversitäts-Zuordnung
-                    found_host = None
-                    for host_id, guest_list in guests_per_host.items():
-                        if team in guest_list:
-                            # Finde das Host-Team-Objekt
-                            for potential_host in host_teams_by_course[course]:
-                                if potential_host.id == host_id:
-                                    found_host = potential_host
-                                    break
-                            if found_host:
-                                break
+                    # KRITISCHER FIX: Finde den BESTEN Host basierend auf aktueller Position!
+                    # Ignoriere Diversity-Zuordnungen für bessere Routen
 
-                    if found_host:
-                        hosts[course] = found_host
-                        distances[course] = self.distances[(
-                            current_location.id, found_host.id)]
+                    best_host = None
+                    min_distance = float('inf')
+
+                    # Prüfe alle verfügbaren Hosts für diesen Kurs
+                    for potential_host in host_teams_by_course[course]:
+                        # Berechne Distanz von aktueller Position zu diesem Host
+                        distance = self.distances.get(
+                            (current_location.id, potential_host.id), float('inf'))
+
+                        if distance < min_distance:
+                            min_distance = distance
+                            best_host = potential_host
+
+                    if best_host:
+                        hosts[course] = best_host
+                        distances[course] = min_distance
                         # Team bewegt sich zum neuen Host-Standort
-                        current_location = found_host
+                        current_location = best_host
+                        logger.debug(
+                            f"   🎯 {team.name} → {best_host.name} ({min_distance:.1f}km)")
                     else:
                         logger.warning(
-                            f"⚠️ Keine Host-Zuordnung für {team.name} bei {course} gefunden!")
+                            f"⚠️ Keine Hosts für {course} verfügbar!")
                         # Fallback: Nehme ersten verfügbaren Host
                         fallback_host = host_teams_by_course[course][0]
                         hosts[course] = fallback_host
-                        distances[course] = self.distances[(
-                            current_location.id, fallback_host.id)]
+                        distances[course] = self.distances.get(
+                            (current_location.id, fallback_host.id), 5.0)
                         current_location = fallback_host
 
             team_total_distance = sum(distances.values())

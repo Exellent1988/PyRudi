@@ -1041,27 +1041,47 @@ def precalculate_route_geometries(event, assignments):
         # Team-Koordinaten
         if hasattr(team, 'latitude') and hasattr(team, 'longitude') and team.latitude and team.longitude:
             team_coords = (float(team.latitude), float(team.longitude))
+            current_location = team_coords
 
-            # Routen zu Hosting-Locations
-            for course, host_team in hosts.items():
-                if host_team and host_team != team:
+            # Routen in chronologischer Reihenfolge (gleiche Logik wie Frontend)
+            course_order = ['appetizer', 'main_course', 'dessert']
+
+            for course in course_order:
+                if course in hosts and hosts[course] and hosts[course] != team:
+                    # Team geht zu anderem Host
+                    host_team = hosts[course]
                     if hasattr(host_team, 'latitude') and hasattr(host_team, 'longitude') and host_team.latitude and host_team.longitude:
                         host_coords = (float(host_team.latitude),
                                        float(host_team.longitude))
 
-                        # Route von Team zu Host hinzufügen
+                        # Route von aktueller Position zu Host
                         route_key = (
-                            team_coords[0], team_coords[1], host_coords[0], host_coords[1])
+                            current_location[0], current_location[1], host_coords[0], host_coords[1])
                         routes_to_calc.add(route_key)
 
-            # Route zur Afterparty (falls vorhanden)
+                        # Update aktuelle Position
+                        current_location = host_coords
+                elif assignment_data.get('course') == course:
+                    # Team hostet selbst - muss nach Hause!
+                    if current_location != team_coords:
+                        # Route von aktueller Position nach Hause
+                        route_key = (
+                            current_location[0], current_location[1], team_coords[0], team_coords[1])
+                        routes_to_calc.add(route_key)
+
+                    # Update Position: Jetzt zuhause
+                    current_location = team_coords
+
+            # Route zur Afterparty (falls vorhanden) - von aktueller Position
             if hasattr(event, 'after_party') and event.after_party:
                 if hasattr(event.after_party, 'latitude') and hasattr(event.after_party, 'longitude') and event.after_party.latitude and event.after_party.longitude:
                     party_coords = (float(event.after_party.latitude), float(
                         event.after_party.longitude))
-                    route_key = (
-                        team_coords[0], team_coords[1], party_coords[0], party_coords[1])
-                    routes_to_calc.add(route_key)
+                    # Route von aktueller Position (nicht immer Zuhause!) zur Afterparty
+                    if current_location != party_coords:  # Nur wenn Afterparty nicht zuhause ist
+                        route_key = (
+                            current_location[0], current_location[1], party_coords[0], party_coords[1])
+                        routes_to_calc.add(route_key)
 
     logger.info(f"🗺️ Berechne {len(routes_to_calc)} Route-Geometrien...")
 
