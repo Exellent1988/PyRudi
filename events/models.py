@@ -72,7 +72,7 @@ class Event(models.Model):
 
     # Event-Konfiguration
     max_teams = models.PositiveIntegerField(
-        _('Maximale Team-Anzahl'),
+        _('Minimale Team-Anzahl'),
         validators=[MinValueValidator(3)],
         help_text=_('Mindestens 3 Teams erforderlich')
     )
@@ -93,7 +93,7 @@ class Event(models.Model):
         _('Preis pro Person'),
         max_digits=6,
         decimal_places=2,
-        default=Decimal('25.00'),
+        default=Decimal('0.00'),
         validators=[MinValueValidator(Decimal('0.00'))]
     )
 

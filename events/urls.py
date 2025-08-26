@@ -44,6 +44,12 @@ urlpatterns = [
     path('<int:event_id>/additional-optimization/',
          views.run_additional_optimization, name='run_additional_optimization'),
 
+    # Afterparty Management URLs
+    path('<int:event_id>/get-afterparty/',
+         views.get_afterparty, name='get_afterparty'),
+    path('<int:event_id>/save-afterparty/',
+         views.save_afterparty, name='save_afterparty'),
+
     # Debug-URLs (nur für Development)
     path('<int:event_id>/debug-progress/',
          views.debug_progress, name='debug_progress'),
