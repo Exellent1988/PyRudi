@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load l10n %}
 
 {% block title %}{{ event.name }} verwalten - Running Dinner{% endblock %}
 
@@ -285,9 +286,14 @@
                         </a>
                         {% endif %}
                         
-                        <!-- Gastküchen & Afterparty Button -->
+                        <!-- Gastküchen Button -->
                         <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#guestKitchensModal">
-                            <i class="bi bi-house-door"></i> Gastküchen & Afterparty
+                            <i class="bi bi-house-door"></i> Gastküchen verwalten
+                        </button>
+                        
+                        <!-- Afterparty Button -->
+                        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#afterpartyModal">
+                            <i class="bi bi-music-note-beamed"></i> Afterparty konfigurieren
                         </button>
                         
                         <a href="{% url 'events:event_detail' event_id=event.id %}" class="btn btn-outline-primary">
@@ -519,12 +525,7 @@
                             🏠 Gastküchen
                         </button>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="after-party-tab" data-bs-toggle="tab" data-bs-target="#after-party" 
-                                type="button" role="tab" aria-controls="after-party" aria-selected="false">
-                            🎉 Afterparty
-                        </button>
-                    </li>
+
                 </ul>
                 
                 <div class="tab-content" id="guestKitchenTabsContent">
@@ -737,14 +738,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const formData = new FormData(afterPartyForm);
         
-        fetch(`/events/{{ event.id }}/save-afterparty/`, {
+                                fetch(`/events/{{ event.id }}/save-afterparty/`, {
             method: 'POST',
             body: formData,
             headers: {
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('📡 Afterparty Save Response Status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.text().then(text => {
+                console.log('📡 Afterparty Raw Response:', text);
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    console.error('❌ JSON Parse Error:', e, 'Raw:', text);
+                    throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
+                }
+            });
+        })
         .then(data => {
             if (data.success) {
                 // Zeige Erfolg
@@ -772,13 +787,29 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error saving after party:', error);
-            alert('Fehler beim Speichern der Afterparty');
+            
+            // Zeige detaillierten Fehler
+            const errorMsg = error.message || 'Unbekannter Fehler';
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+            alertDiv.innerHTML = `
+                ❌ Fehler beim Speichern: ${errorMsg}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            afterPartyForm.appendChild(alertDiv);
+            
+            // Auto-remove nach 5 Sekunden
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
         });
     });
 
 // Live Optimization Progress Tracking - Global Scope
 let optimizationTimer = null;
-const eventId = {{ event.id }};
+const eventId = {{ event.id|unlocalize }};
 
 function showDebugMessage(message) {
     const debugDiv = document.getElementById('debugInfo');
