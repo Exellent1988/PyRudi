@@ -138,7 +138,14 @@ class EventViewSet(viewsets.ModelViewSet):
 # Django Views
 def event_list(request):
     """Liste aller öffentlichen Events"""
-    events = Event.objects.filter(is_public=True).order_by('-event_date')
+    from django.core.paginator import Paginator
+
+    # Zeige alle öffentlichen Events, aber nicht abgeschlossene/abgesagte Events
+    events = Event.objects.filter(
+        is_public=True,
+        status__in=['planning', 'registration_open', 'registration_closed',
+                    'optimization_running', 'optimized', 'in_progress']
+    ).order_by('-event_date')
 
     # Filter anwenden
     city_filter = request.GET.get('city')
@@ -153,6 +160,11 @@ def event_list(request):
             Q(description__icontains=search_query) |
             Q(city__icontains=search_query)
         )
+
+    # Pagination
+    paginator = Paginator(events, 6)  # Show 6 events per page
+    page_number = request.GET.get('page')
+    events = paginator.get_page(page_number)
 
     # Verfügbare Städte für Filter
     available_cities = Event.objects.filter(is_public=True).values_list(
@@ -351,7 +363,16 @@ def update_event(request, event_id):
         event.city = request.POST.get('city')
         event.event_date = request.POST.get('event_date')
         event.max_teams = int(request.POST.get('max_teams'))
-        event.price_per_person = request.POST.get('price_per_person')
+
+        # Handle price_per_person properly - allow zero and convert to Decimal
+        price_value = request.POST.get('price_per_person', '0.00')
+        try:
+            from decimal import Decimal
+            event.price_per_person = Decimal(
+                str(price_value)) if price_value else Decimal('0.00')
+        except (ValueError, TypeError):
+            event.price_per_person = Decimal('0.00')
+
         event.appetizer_time = request.POST.get('appetizer_time')
         event.main_course_time = request.POST.get('main_course_time')
         event.dessert_time = request.POST.get('dessert_time')
@@ -398,8 +419,8 @@ def invite_organizer(request, event_id):
         from accounts.models import CustomUser
         invited_user = CustomUser.objects.get(email=email)
 
-        # Prüfe ob bereits Organisator
-        if EventOrganizer.objects.filter(event=event, user=invited_user).exists():
+        # Prüfe ob bereits Organisator (sowohl Haupt-Organisator als auch Co-Organisator)
+        if invited_user == event.organizer or EventOrganizer.objects.filter(event=event, user=invited_user).exists():
             messages.warning(
                 request, f'{invited_user.full_name} ist bereits Organisator dieses Events.')
             return redirect('events:manage_event', event_id=event_id)
