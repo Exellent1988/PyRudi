@@ -116,10 +116,19 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="fw-bold">{{ registration.team.member_count }}</span> Personen
-                                        {% if registration.team.member_count < registration.team.max_members %}
-                                        <br><small class="text-warning">⚠️ Nicht vollständig</small>
-                                        {% endif %}
+                                        <div class="mb-1">
+                                            <span class="fw-bold">{{ registration.team.member_count }}</span> Personen
+                                            {% if registration.team.member_count < registration.team.max_members %}
+                                            <small class="text-warning">⚠️ Nicht vollständig</small>
+                                            {% endif %}
+                                        </div>
+                                        <div class="small text-muted">
+                                            {% for member in registration.team.active_members %}
+                                                {{ member.full_name }}{% if not forloop.last %}, {% endif %}
+                                            {% empty %}
+                                                <em>Keine Mitglieder</em>
+                                            {% endfor %}
+                                        </div>
                                     </td>
                                     <td>
                                         {% if registration.status == 'confirmed' %}
@@ -342,6 +351,14 @@
                             <h6 class="mb-0">{{ organizer.user.full_name }}</h6>
                             <small class="text-muted">{{ organizer.get_role_display }}</small>
                         </div>
+                        {% if user_role == 'main_organizer' %}
+                        <form method="post" action="{% url 'events:remove_organizer' event_id=event.id organizer_id=organizer.id %}" class="ms-2" onsubmit="return confirm('Sind Sie sicher, dass Sie {{ organizer.user.full_name }} als Organisator entfernen möchten?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
@@ -359,7 +376,10 @@
                 <div class="card-body">
                     {% for allergy_info in critical_allergies %}
                     <div class="alert alert-danger py-2 mb-2">
-                        <strong>{{ allergy_info.member }}</strong>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <strong>{{ allergy_info.member }}</strong>
+                            <span class="badge bg-light text-dark">{{ allergy_info.team_name }}</span>
+                        </div>
                         {% for allergy in allergy_info.allergies %}
                         <div class="small">
                             <strong>{{ allergy.name }}</strong> ({{ allergy.severity }})

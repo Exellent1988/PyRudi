@@ -352,6 +352,11 @@ class Team(models.Model):
         return self.participation_type == 'kitchen_only' and self.is_active
 
     @property
+    def active_members(self):
+        """Gibt alle aktiven Mitglieder des Teams zurück"""
+        return self.members.filter(teammembership__is_active=True)
+
+    @property
     def team_dietary_restrictions(self):
         """Gibt alle Ernährungseinschränkungen des Teams zurück"""
         from django.db.models import Q

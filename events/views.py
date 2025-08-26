@@ -304,7 +304,9 @@ def manage_event(request, event_id):
 
     # Hole Event-Daten
     registrations = TeamRegistration.objects.filter(
-        event=event).select_related('team')
+        event=event).select_related('team').prefetch_related(
+        'team__members__teammembership_set'
+    )
     organizers = EventOrganizer.objects.filter(
         event=event, is_active=True).select_related('user')
 
@@ -319,6 +321,9 @@ def manage_event(request, event_id):
     for reg in registrations.filter(status='confirmed'):
         team_critical = reg.team.get_team_emergency_info()
         if team_critical:
+            # Füge Teamname zu jeder Allergie-Info hinzu
+            for allergy_info in team_critical:
+                allergy_info['team_name'] = reg.team.name
             critical_allergies.extend(team_critical)
 
     # Berechtige Benutzer-Aktionen für Template
@@ -439,6 +444,30 @@ def invite_organizer(request, event_id):
 
     except CustomUser.DoesNotExist:
         messages.error(request, f'Kein User mit der E-Mail {email} gefunden.')
+
+    return redirect('events:manage_event', event_id=event_id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def remove_organizer(request, event_id, organizer_id):
+    """Co-Organisator entfernen"""
+    event = get_object_or_404(Event, id=event_id)
+    organizer_to_remove = get_object_or_404(
+        EventOrganizer, id=organizer_id, event=event)
+
+    # Nur Hauptorganisator kann Organisatoren entfernen
+    if request.user != event.organizer:
+        messages.error(
+            request, 'Nur der Haupt-Organisator kann Organisatoren entfernen.')
+        return redirect('events:manage_event', event_id=event_id)
+
+    # Organisator entfernen (setze auf inaktiv)
+    organizer_to_remove.is_active = False
+    organizer_to_remove.save()
+
+    messages.success(
+        request, f'{organizer_to_remove.user.full_name} wurde als Organisator entfernt.')
 
     return redirect('events:manage_event', event_id=event_id)
 

@@ -18,7 +18,7 @@
                 <!-- Team Info -->
                 <div class="mb-3">
                     <div class="small text-muted mb-1">
-                        <i class="bi bi-geo-alt"></i> {{ assignment.team.address }}
+                        <i class="bi bi-geo-alt"></i> {{ assignment.team.home_address }}
                     </div>
                     <div class="small text-muted">
                         <i class="bi bi-people"></i> {{ assignment.team.member_count }} Personen
@@ -46,12 +46,15 @@
                     <div class="small mt-1">
                         {% if course == 'appetizer' and assignment.hosts_appetizer %}
                         Host: <strong>{{ assignment.hosts_appetizer.name }}</strong>
+                        <br><i class="bi bi-geo-alt"></i> {{ assignment.hosts_appetizer.home_address }}
                         <br>Entfernung: {{ assignment.distance_to_appetizer }} km
                         {% elif course == 'main_course' and assignment.hosts_main_course %}
                         Host: <strong>{{ assignment.hosts_main_course.name }}</strong>
+                        <br><i class="bi bi-geo-alt"></i> {{ assignment.hosts_main_course.home_address }}
                         <br>Entfernung: {{ assignment.distance_to_main_course }} km
                         {% elif course == 'dessert' and assignment.hosts_dessert %}
                         Host: <strong>{{ assignment.hosts_dessert.name }}</strong>
+                        <br><i class="bi bi-geo-alt"></i> {{ assignment.hosts_dessert.home_address }}
                         <br>Entfernung: {{ assignment.distance_to_dessert }} km
                         {% else %}
                         <span class="text-muted">Keine Zuweisung</span>
@@ -122,7 +125,7 @@
                         <h6>Team-Informationen</h6>
                         <ul class="list-unstyled">
                             <li><strong>Mitglieder:</strong> {{ assignment.team.member_count }}</li>
-                            <li><strong>Adresse:</strong> {{ assignment.team.address }}</li>
+                            <li><strong>Adresse:</strong> {{ assignment.team.home_address }}</li>
                             <li><strong>Status:</strong> 
                                 {% if assignment.team.is_active %}
                                 <span class="badge bg-success">Aktiv</span>
