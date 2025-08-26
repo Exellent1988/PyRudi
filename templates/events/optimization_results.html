@@ -178,8 +178,14 @@
                         </li>
                     </ul>
                 </div>
-                <div class="card-body">
-                    <div class="tab-content" id="courseTabContent">
+                                    <div class="card-body">
+                        <!-- Info-Bereich für ausgewähltes Team -->
+                        <div id="selected-team-info"></div>
+                        
+                        <!-- Info-Bereich für hervorgehobenes Team in Hosting-Übersicht -->
+                        <div id="highlighted-team-info"></div>
+                        
+                        <div class="tab-content" id="courseTabContent">
                         <!-- Hosting Overview -->
                         <div class="tab-pane fade show active" id="hosting" role="tabpanel">
                             <div class="row g-4">
@@ -202,10 +208,10 @@
                                         </div>
                                         <div class="card-body">
                                             {% for host_info in hosts %}
-                                            <div class="mb-3 p-3 border rounded bg-white">
+                                            <div class="mb-3 p-3 border rounded bg-white team-card" data-team-id="{{ host_info.host.id }}" data-team-name="{{ host_info.host.name }}">
                                                 <div class="d-flex align-items-center mb-2">
                                                     <i class="bi bi-house-fill text-primary me-2"></i>
-                                                    <strong>{{ host_info.host.name }}</strong>
+                                                    <strong class="team-name-clickable" style="cursor: pointer; text-decoration: underline;" onclick="highlightTeam('{{ host_info.host.id }}', '{{ host_info.host.name }}')">{{ host_info.host.name }}</strong>
                                                 </div>
                                                 <div class="small text-muted mb-2">
                                                     <i class="bi bi-geo-alt"></i> {{ host_info.host.home_address }}
@@ -213,7 +219,10 @@
                                                 <div class="small">
                                                     <strong>Gäste:</strong>
                                                     {% for guest in host_info.guests %}
-                                                    <span class="badge bg-secondary me-1">{{ guest.name }}</span>
+                                                    <span class="badge bg-secondary me-1 guest-badge team-clickable" 
+                                                          data-team-id="{{ guest.id }}" 
+                                                          style="cursor: pointer;"
+                                                          onclick="highlightTeam('{{ guest.id }}', '{{ guest.name }}')">{{ guest.name }}</span>
                                                     {% empty %}
                                                     <span class="text-muted">Keine Gäste</span>
                                                     {% endfor %}
@@ -634,6 +643,18 @@ function initMap() {
         const marker = L.marker([team.lat, team.lng], { icon: markerIcon })
             .addTo(map);
         
+        // Speichere Team-Referenz im Marker
+        marker.teamData = team;
+        
+        // Hover-Events für Map-Modal
+        marker.on('mouseover', function(e) {
+            showMapModal(e, team);
+        });
+        
+        marker.on('mouseout', function(e) {
+            hideMapModal();
+        });
+        
         // Popup-Inhalt
         const courseNames = {
             'appetizer': 'Vorspeise',
@@ -659,6 +680,11 @@ function initMap() {
         `;
         
         marker.bindPopup(popupContent);
+        
+        // Klick-Event für Team-spezifische Routen
+        marker.on('click', function() {
+            selectTeamForRoutes(team);
+        });
         
         // Label hinzufügen (wenn aktiviert)
         if (document.getElementById('showLabels').checked) {
@@ -775,39 +801,164 @@ function drawRoutes() {
     routeLines.forEach(line => map.removeLayer(line));
     routeLines = [];
     
-    const courseColors = {
-        'appetizer': '#e74c3c',
-        'main_course': '#f39c12', 
-        'dessert': '#27ae60'
-    };
+    // Generiere Team-Farben basierend auf Team-ID
+    const teamColors = generateTeamColors();
     
-    // Zeichne Routen für jedes Team
+    // Zeichne Routen für jedes Team in deren eigener Farbe
     teamData.forEach(team => {
-        // Verfolge die Route: Home → Vorspeise → Hauptgang → Nachspeise
-        let currentLocation = {lat: team.lat, lng: team.lng, name: team.name};
-        
-        ['appetizer', 'main_course', 'dessert'].forEach(course => {
-            if (team.hosts[course] && team.course !== course) {
-                // Finde Host-Team
-                const hostTeam = teamData.find(t => t.name === team.hosts[course]);
-                if (hostTeam) {
-                    const nextLocation = {lat: hostTeam.lat, lng: hostTeam.lng, name: hostTeam.name};
-                    
-                    // Lade echte Route-Geometrie
-                    loadRouteGeometry(currentLocation, nextLocation, courseColors[course]);
-                    
-                    // Update aktuelle Position für nächsten Gang
-                    currentLocation = nextLocation;
-                }
-            } else if (team.course === course) {
-                // Team hostet diesen Gang - bleibt zuhause (reset zu Home)
-                currentLocation = {lat: team.lat, lng: team.lng, name: team.name};
-            }
-        });
+        const teamColor = teamColors[team.id] || '#6c757d';
+        drawCompleteTeamRoute(team, teamColor, false);
     });
 }
 
-async function loadRouteGeometry(start, end, color) {
+function generateTeamColors() {
+    const colors = [
+        '#e74c3c', '#3498db', '#f39c12', '#27ae60', '#9b59b6', 
+        '#e67e22', '#1abc9c', '#34495e', '#f1c40f', '#95a5a6',
+        '#d63031', '#74b9ff', '#fdcb6e', '#00b894', '#a29bfe',
+        '#fd79a8', '#ff7675', '#6c5ce7', '#fab1a0', '#00cec9'
+    ];
+    
+    const teamColors = {};
+    teamData.forEach((team, index) => {
+        teamColors[team.id] = colors[index % colors.length];
+    });
+    
+    return teamColors;
+}
+
+function drawCompleteTeamRoute(team, teamColor, showWaypoints = true) {
+    // Startpunkt: Team-Zuhause
+    let currentLocation = {
+        lat: team.lat, 
+        lng: team.lng, 
+        name: team.name,
+        type: 'home'
+    };
+    
+    const route = [currentLocation];
+    let stepNumber = 1;
+    
+    // Gänge in chronologischer Reihenfolge
+    const courseOrder = ['appetizer', 'main_course', 'dessert'];
+    
+    courseOrder.forEach(course => {
+        if (team.hosts[course] && team.course !== course) {
+            // Team geht zu anderem Host
+            const hostTeam = teamData.find(t => t.name === team.hosts[course]);
+            if (hostTeam) {
+                const nextLocation = {
+                    lat: hostTeam.lat, 
+                    lng: hostTeam.lng, 
+                    name: hostTeam.name,
+                    type: course,
+                    stepNumber: stepNumber++
+                };
+                
+                route.push(nextLocation);
+                
+                // Zeichne Route-Segment
+                loadRouteGeometry(currentLocation, nextLocation, teamColor, showWaypoints);
+                currentLocation = nextLocation;
+            }
+        } else if (team.course === course) {
+            // Team hostet selbst - füge Waypoint hinzu aber keine Route
+            if (showWaypoints) {
+                addWaypoint(currentLocation, course, stepNumber++, teamColor);
+            }
+        }
+    });
+    
+    // Afterparty (falls vorhanden)
+    if (afterpartyData && currentLocation.type !== 'home') {
+        const afterpartyLocation = {
+            lat: afterpartyData.lat,
+            lng: afterpartyData.lng,
+            name: afterpartyData.name,
+            type: 'afterparty',
+            stepNumber: stepNumber++
+        };
+        
+        route.push(afterpartyLocation);
+        loadRouteGeometry(currentLocation, afterpartyLocation, teamColor, showWaypoints);
+    }
+}
+
+// Waypoint-Marker für die Route
+let waypointMarkers = [];
+
+function addWaypoint(location, courseType, stepNumber, teamColor) {
+    const courseIcons = {
+        'home': '🏠',
+        'appetizer': '🍸', 
+        'main_course': '🍽️',
+        'dessert': '🍰',
+        'afterparty': '🎉'
+    };
+    
+    const courseNames = {
+        'home': 'Zuhause',
+        'appetizer': 'Vorspeise',
+        'main_course': 'Hauptgang', 
+        'dessert': 'Nachspeise',
+        'afterparty': 'Afterparty'
+    };
+    
+    const waypointIcon = L.divIcon({
+        className: 'waypoint-marker',
+        html: `<div style="
+            background-color: ${teamColor};
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            position: relative;
+        ">
+            ${stepNumber}
+            <div style="
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                font-size: 12px;
+                background: white;
+                border-radius: 50%;
+                width: 18px;
+                height: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            ">${courseIcons[courseType] || '📍'}</div>
+        </div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    });
+    
+    const marker = L.marker([location.lat, location.lng], { icon: waypointIcon }).addTo(map);
+    
+    marker.bindPopup(`
+        <div class="text-center">
+            <strong>${courseIcons[courseType]} ${courseNames[courseType]}</strong><br>
+            <div class="small">${location.name}</div>
+            <div class="small text-muted">Station ${stepNumber}</div>
+        </div>
+    `);
+    
+    waypointMarkers.push(marker);
+}
+
+function clearWaypoints() {
+    waypointMarkers.forEach(marker => map.removeLayer(marker));
+    waypointMarkers = [];
+}
+
+async function loadRouteGeometry(start, end, color, showWaypoints = false) {
     try {
         // Baue API-URL für Route-Geometrie
         const eventId = {{ event.id }};
@@ -820,8 +971,8 @@ async function loadRouteGeometry(start, end, color) {
             // Zeichne echte Route mit vielen Punkten
             const line = L.polyline(data.route_points, {
                 color: color,
-                weight: 3,
-                opacity: 0.8,
+                weight: 4,
+                opacity: 0.9,
                 smoothFactor: 1.0
             }).addTo(map);
             
@@ -835,28 +986,32 @@ async function loadRouteGeometry(start, end, color) {
             `);
             
             routeLines.push(line);
+            
+            // Waypoints hinzufügen falls gewünscht
+            if (showWaypoints && end.stepNumber) {
+                addWaypoint(end, end.type, end.stepNumber, color);
+            }
         } else {
             // Fallback: Gerade Linie bei API-Fehler
             console.warn('Route-API Fehler, verwende Luftlinie:', data.error || 'Unbekannt');
-            drawStraightLine(start, end, color);
+            drawStraightLine(start, end, color, showWaypoints);
         }
     } catch (error) {
         console.error('Route-Laden fehlgeschlagen:', error);
         // Fallback: Gerade Linie
-        drawStraightLine(start, end, color);
+        drawStraightLine(start, end, color, showWaypoints);
     }
 }
 
-function drawStraightLine(start, end, color) {
-    // Fallback: Einfache gerade Linie
+function drawStraightLine(start, end, color, showWaypoints = false) {
     const line = L.polyline([
         [start.lat, start.lng],
         [end.lat, end.lng]
     ], {
         color: color,
-        weight: 2,
-        opacity: 0.7,
-        dashArray: '5, 5'
+        weight: 3,
+        opacity: 0.8,
+        dashArray: '8, 5'
     }).addTo(map);
     
     line.bindPopup(`
@@ -867,6 +1022,11 @@ function drawStraightLine(start, end, color) {
     `);
     
     routeLines.push(line);
+    
+    // Waypoints hinzufügen falls gewünscht
+    if (showWaypoints && end.stepNumber) {
+        addWaypoint(end, end.type, end.stepNumber, color);
+    }
 }
 
 function updateMapStats() {
@@ -875,18 +1035,310 @@ function updateMapStats() {
     document.getElementById('max-distance').textContent = `${maxDistance} km`;
 }
 
+// Variable für ausgewähltes Team
+let selectedTeam = null;
+
+// Funktion für Team-spezifische Routen-Anzeige
+function selectTeamForRoutes(team) {
+    selectedTeam = team;
+    
+    // Update UI
+    const teamInfo = document.getElementById('selected-team-info');
+    if (teamInfo) {
+        teamInfo.innerHTML = `
+            <div class="alert alert-info">
+                <strong>🔍 Ausgewähltes Team:</strong> ${team.name} 
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="clearSelectedTeam()">
+                    <i class="bi bi-x"></i> Alle zeigen
+                </button>
+            </div>
+        `;
+    }
+    
+    // Marker-Styling aktualisieren
+    updateMarkerStyles();
+    
+    // Routen für ausgewähltes Team zeichnen
+    if (document.getElementById('showRoutes').checked) {
+        drawTeamRoutes(team);
+    }
+}
+
+function clearSelectedTeam() {
+    selectedTeam = null;
+    
+    // UI zurücksetzen
+    const teamInfo = document.getElementById('selected-team-info');
+    if (teamInfo) {
+        teamInfo.innerHTML = '';
+    }
+    
+    // Marker-Styling zurücksetzen
+    updateMarkerStyles();
+    
+    // Alle Routen zeichnen
+    if (document.getElementById('showRoutes').checked) {
+        drawRoutes();
+    }
+}
+
+function updateMarkerStyles() {
+    teamMarkers.forEach(marker => {
+        if (marker.teamData) {
+            const team = marker.teamData;
+            const courseColors = {
+                'appetizer': '#e74c3c',
+                'main_course': '#f39c12', 
+                'dessert': '#27ae60',
+                'guest': '#3498db'
+            };
+            
+            let color = courseColors[team.course] || courseColors['guest'];
+            let size = 20;
+            let border = '2px solid white';
+            
+            // Hervorhebung für ausgewähltes Team
+            if (selectedTeam && team.id === selectedTeam.id) {
+                size = 30;
+                border = '4px solid #ffc107';
+            } else if (selectedTeam) {
+                // Andere Teams abdunkeln
+                color = color + '80'; // Transparenz hinzufügen
+            }
+            
+            const newIcon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="
+                    background-color: ${color};
+                    width: ${size}px;
+                    height: ${size}px;
+                    border-radius: 50%;
+                    border: ${border};
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                "></div>`,
+                iconSize: [size, size],
+                iconAnchor: [size/2, size/2]
+            });
+            
+            marker.setIcon(newIcon);
+        }
+    });
+}
+
+function drawTeamRoutes(selectedTeam) {
+    // Lösche bestehende Routen und Waypoints
+    routeLines.forEach(line => map.removeLayer(line));
+    routeLines = [];
+    clearWaypoints();
+    
+    // Generiere Team-Farbe
+    const teamColors = generateTeamColors();
+    const teamColor = teamColors[selectedTeam.id] || '#007bff';
+    
+    // Zeichne komplette Abendroute für das ausgewählte Team mit Waypoints
+    drawCompleteTeamRoute(selectedTeam, teamColor, true);
+}
+
 // Event-Listener für Karten-Steuerung
 document.getElementById('showRoutes').addEventListener('change', function() {
     if (this.checked) {
-        drawRoutes();
+        if (selectedTeam) {
+            drawTeamRoutes(selectedTeam);
+        } else {
+            drawRoutes();
+        }
     } else {
         routeLines.forEach(line => map.removeLayer(line));
         routeLines = [];
+        clearWaypoints();
     }
 });
 
 document.getElementById('showLabels').addEventListener('change', function() {
     initMap(); // Neu initialisieren um Labels zu aktualisieren
+});
+
+// Team-Hervorhebung in Hosting-Übersicht
+let highlightedTeamId = null;
+
+function highlightTeam(teamId, teamName) {
+    // Reset vorherige Hervorhebung
+    clearTeamHighlight();
+    
+    highlightedTeamId = teamId;
+    
+    // Alle Cards mit diesem Team hervorheben
+    document.querySelectorAll(`.team-card[data-team-id="${teamId}"]`).forEach(card => {
+        card.classList.add('highlighted-team');
+        card.style.backgroundColor = '#fff3cd';
+        card.style.border = '2px solid #ffc107';
+        card.style.boxShadow = '0 4px 8px rgba(255, 193, 7, 0.3)';
+    });
+    
+    // Alle Guest-Badges mit diesem Team hervorheben
+    document.querySelectorAll(`.guest-badge[data-team-id="${teamId}"]`).forEach(badge => {
+        badge.classList.remove('bg-secondary');
+        badge.classList.add('bg-warning');
+        badge.style.transform = 'scale(1.1)';
+    });
+    
+    // Info-Banner anzeigen
+    const highlightInfo = document.getElementById('highlighted-team-info');
+    if (highlightInfo) {
+        highlightInfo.innerHTML = `
+            <div class="alert alert-warning">
+                <strong>🎯 Hervorgehobenes Team:</strong> ${teamName}
+                <button type="button" class="btn btn-sm btn-outline-warning ms-2" onclick="clearTeamHighlight()">
+                    <i class="bi bi-x"></i> Hervorhebung löschen
+                </button>
+            </div>
+        `;
+    }
+}
+
+function clearTeamHighlight() {
+    highlightedTeamId = null;
+    
+    // Alle hervorgehobenen Cards zurücksetzen
+    document.querySelectorAll('.team-card.highlighted-team').forEach(card => {
+        card.classList.remove('highlighted-team');
+        card.style.backgroundColor = '';
+        card.style.border = '';
+        card.style.boxShadow = '';
+    });
+    
+    // Alle hervorgehobenen Guest-Badges zurücksetzen
+    document.querySelectorAll('.guest-badge.bg-warning').forEach(badge => {
+        badge.classList.remove('bg-warning');
+        badge.classList.add('bg-secondary');
+        badge.style.transform = '';
+    });
+    
+    // Info-Banner entfernen
+    const highlightInfo = document.getElementById('highlighted-team-info');
+    if (highlightInfo) {
+        highlightInfo.innerHTML = '';
+    }
+}
+
+// Map-Modal Funktionalität
+let mapModal = null;
+
+function showMapModal(event, team) {
+    // Entferne existierendes Modal
+    hideMapModal();
+    
+    // Erstelle Modal-Element
+    mapModal = document.createElement('div');
+    mapModal.id = 'map-hover-modal';
+    mapModal.style.cssText = `
+        position: fixed;
+        background: white;
+        border: 2px solid #007bff;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        max-width: 300px;
+        font-size: 14px;
+        pointer-events: none;
+    `;
+    
+    // Course-Namen für Anzeige
+    const courseNames = {
+        'appetizer': 'Vorspeise',
+        'main_course': 'Hauptgang', 
+        'dessert': 'Nachspeise'
+    };
+    
+    // Modal-Inhalt erstellen
+    const courseColor = {
+        'appetizer': '#e74c3c',
+        'main_course': '#f39c12',
+        'dessert': '#27ae60'
+    }[team.course] || '#6c757d';
+    
+    mapModal.innerHTML = `
+        <div style="border-bottom: 1px solid #eee; margin-bottom: 10px; padding-bottom: 8px;">
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <div style="width: 12px; height: 12px; background: ${courseColor}; border-radius: 50%; margin-right: 8px;"></div>
+                <strong style="color: #333;">${team.name}</strong>
+            </div>
+            <div style="color: #666; font-size: 12px;">
+                <i class="bi bi-geo-alt"></i> ${team.address}
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 8px;">
+            <strong style="color: ${courseColor};">Hostet:</strong> ${courseNames[team.course] || 'Unbekannt'}
+        </div>
+        
+        <div style="font-size: 12px; color: #666;">
+            <div style="margin-bottom: 3px;">
+                <strong>Route:</strong>
+            </div>
+            <div>🍸 Vorspeise: ${team.hosts.appetizer || '<span style="color: ' + courseColor + '; font-weight: bold;">Selbst hosting</span>'}</div>
+            <div>🍽️ Hauptgang: ${team.hosts.main_course || '<span style="color: ' + courseColor + '; font-weight: bold;">Selbst hosting</span>'}</div>
+            <div>🍰 Nachspeise: ${team.hosts.dessert || '<span style="color: ' + courseColor + '; font-weight: bold;">Selbst hosting</span>'}</div>
+        </div>
+        
+        ${team.totalDistance ? `
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; font-size: 12px;">
+            <strong>Gesamtstrecke:</strong> <span style="color: #007bff;">${team.totalDistance} km</span>
+        </div>
+        ` : ''}
+        
+        <div style="margin-top: 8px; font-size: 11px; color: #999; text-align: center;">
+            💡 Klick für Routen-Filter
+        </div>
+    `;
+    
+    document.body.appendChild(mapModal);
+    
+    // Position relativ zur Maus
+    updateModalPosition(event.originalEvent);
+}
+
+function hideMapModal() {
+    if (mapModal) {
+        document.body.removeChild(mapModal);
+        mapModal = null;
+    }
+}
+
+function updateModalPosition(mouseEvent) {
+    if (!mapModal || !mouseEvent) return;
+    
+    const modalWidth = 300;
+    const modalHeight = 250;
+    const padding = 10;
+    
+    let x = mouseEvent.clientX + padding;
+    let y = mouseEvent.clientY + padding;
+    
+    // Verhindere Überlauf rechts
+    if (x + modalWidth > window.innerWidth) {
+        x = mouseEvent.clientX - modalWidth - padding;
+    }
+    
+    // Verhindere Überlauf unten
+    if (y + modalHeight > window.innerHeight) {
+        y = mouseEvent.clientY - modalHeight - padding;
+    }
+    
+    // Verhindere negative Positionen
+    x = Math.max(padding, x);
+    y = Math.max(padding, y);
+    
+    mapModal.style.left = x + 'px';
+    mapModal.style.top = y + 'px';
+}
+
+// Maus-Movement für Modal-Position tracking
+document.addEventListener('mousemove', function(e) {
+    if (mapModal) {
+        updateModalPosition(e);
+    }
 });
 
 // Debug: Team-Daten ausgeben
