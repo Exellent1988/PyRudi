@@ -591,3 +591,100 @@ class TeamGuestKitchenAssignment(models.Model):
 
     def __str__(self):
         return f"{self.team.name} → {self.guest_kitchen.name} ({self.get_course_display()})"
+
+
+class RouteGeometry(models.Model):
+    """
+    Gespeicherte Route-Geometrien für schnelle Karten-Darstellung
+    Vermeidet wiederholte API-Aufrufe für bereits berechnete Routen
+    """
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='route_geometries')
+
+    # Start- und Endpunkt der Route
+    start_lat = models.DecimalField(max_digits=10, decimal_places=7)
+    start_lng = models.DecimalField(max_digits=10, decimal_places=7)
+    end_lat = models.DecimalField(max_digits=10, decimal_places=7)
+    end_lng = models.DecimalField(max_digits=10, decimal_places=7)
+
+    # Route-Eigenschaften
+    distance = models.FloatField(help_text="Entfernung in km")
+    duration = models.FloatField(
+        null=True, blank=True, help_text="Gehzeit in Minuten")
+
+    # Route-Geometrie als JSON-Array von [lat, lng] Punkten
+    geometry_points = models.JSONField(
+        help_text="Array von [lat, lng] Koordinaten für Leaflet")
+    point_count = models.IntegerField(default=0)
+
+    # Metadaten
+    created_at = models.DateTimeField(auto_now_add=True)
+    source_api = models.CharField(
+        max_length=50, default='osrm', help_text="Verwendete API (osrm, openroute)")
+
+    class Meta:
+        unique_together = ['event', 'start_lat',
+                           'start_lng', 'end_lat', 'end_lng']
+        indexes = [
+            models.Index(fields=['event', 'start_lat', 'start_lng']),
+            models.Index(fields=['event', 'end_lat', 'end_lng']),
+        ]
+
+    def __str__(self):
+        return f"Route {self.start_lat:.4f},{self.start_lng:.4f} → {self.end_lat:.4f},{self.end_lng:.4f} ({self.point_count} Punkte)"
+
+    @classmethod
+    def get_or_create_route(cls, event, start_lat, start_lng, end_lat, end_lng):
+        """
+        Holt Route aus DB oder erstellt sie über API
+        """
+        from decimal import Decimal
+
+        # Suche existierende Route
+        route, created = cls.objects.get_or_create(
+            event=event,
+            start_lat=Decimal(str(start_lat)).quantize(Decimal('0.0000001')),
+            start_lng=Decimal(str(start_lng)).quantize(Decimal('0.0000001')),
+            end_lat=Decimal(str(end_lat)).quantize(Decimal('0.0000001')),
+            end_lng=Decimal(str(end_lng)).quantize(Decimal('0.0000001')),
+            defaults={'geometry_points': [], 'distance': 0.0, 'point_count': 0}
+        )
+
+        # Falls neu erstellt und noch keine Geometrie
+        if created or not route.geometry_points:
+            route.calculate_and_store_geometry()
+
+        return route
+
+    def calculate_and_store_geometry(self):
+        """
+        Berechnet Route-Geometrie über API und speichert sie
+        """
+        from .routing import get_route_calculator
+
+        route_calc = get_route_calculator()
+        start_coords = (float(self.start_lat), float(self.start_lng))
+        end_coords = (float(self.end_lat), float(self.end_lng))
+
+        # Geometrie berechnen
+        geometry = route_calc.get_walking_route_geometry(
+            start_coords, end_coords)
+
+        if geometry:
+            self.geometry_points = geometry
+            self.point_count = len(geometry)
+            self.source_api = 'osrm'  # Default
+        else:
+            # Fallback: Gerade Linie
+            self.geometry_points = [[float(self.start_lat), float(self.start_lng)],
+                                    [float(self.end_lat), float(self.end_lng)]]
+            self.point_count = 2
+            self.source_api = 'fallback'
+
+        # Distanz berechnen falls noch nicht gesetzt
+        if self.distance == 0.0:
+            distance = route_calc.calculate_walking_distance(
+                start_coords, end_coords)
+            self.distance = distance or 2.5  # Fallback
+
+        self.save()

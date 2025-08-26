@@ -180,6 +180,7 @@
                 </div>
                                     <div class="card-body">
                         <!-- Info-Bereich für ausgewähltes Team -->
+                        <div id="global-team-info"></div>
                         <div id="selected-team-info"></div>
                         
                         <!-- Info-Bereich für hervorgehobenes Team in Hosting-Übersicht -->
@@ -211,7 +212,7 @@
                                             <div class="mb-3 p-3 border rounded bg-white team-card" data-team-id="{{ host_info.host.id }}" data-team-name="{{ host_info.host.name }}">
                                                 <div class="d-flex align-items-center mb-2">
                                                     <i class="bi bi-house-fill text-primary me-2"></i>
-                                                    <strong class="team-name-clickable" style="cursor: pointer; text-decoration: underline;" onclick="highlightTeam('{{ host_info.host.id }}', '{{ host_info.host.name }}')">{{ host_info.host.name }}</strong>
+                                                    <strong class="team-name-clickable" style="cursor: pointer; text-decoration: underline;" onclick="selectGlobalTeam('{{ host_info.host.id }}', '{{ host_info.host.name }}')">{{ host_info.host.name }}</strong>
                                                 </div>
                                                 <div class="small text-muted mb-2">
                                                     <i class="bi bi-geo-alt"></i> {{ host_info.host.home_address }}
@@ -222,7 +223,7 @@
                                                     <span class="badge bg-secondary me-1 guest-badge team-clickable" 
                                                           data-team-id="{{ guest.id }}" 
                                                           style="cursor: pointer;"
-                                                          onclick="highlightTeam('{{ guest.id }}', '{{ guest.name }}')">{{ guest.name }}</span>
+                                                          onclick="selectGlobalTeam('{{ guest.id }}', '{{ guest.name }}')">{{ guest.name }}</span>
                                                     {% empty %}
                                                     <span class="text-muted">Keine Gäste</span>
                                                     {% endfor %}
@@ -682,9 +683,9 @@ function initMap() {
         marker.bindPopup(popupContent);
         
         // Klick-Event für Team-spezifische Routen
-        marker.on('click', function() {
-            selectTeamForRoutes(team);
-        });
+                    marker.on('click', function() {
+                selectGlobalTeam(team.id.toString(), team.name);
+            });
         
         // Label hinzufügen (wenn aktiviert)
         if (document.getElementById('showLabels').checked) {
@@ -796,7 +797,7 @@ function initMap() {
     updateMapStats();
 }
 
-function drawRoutes() {
+async function drawRoutes() {
     // Lösche bestehende Routen
     routeLines.forEach(line => map.removeLayer(line));
     routeLines = [];
@@ -804,11 +805,18 @@ function drawRoutes() {
     // Generiere Team-Farben basierend auf Team-ID
     const teamColors = generateTeamColors();
     
-    // Zeichne Routen für jedes Team in deren eigener Farbe
-    teamData.forEach(team => {
+    // Zeichne Routen für alle Teams parallel für bessere Performance
+    const teamPromises = teamData.map(team => {
         const teamColor = teamColors[team.id] || '#6c757d';
-        drawCompleteTeamRoute(team, teamColor, false);
+        return drawCompleteTeamRoute(team, teamColor, false);
     });
+    
+    try {
+        await Promise.allSettled(teamPromises); // AllSettled = auch bei Fehlern weitermachen
+        console.log('Alle Team-Routen geladen');
+    } catch (error) {
+        console.warn('Fehler beim Laden der Routen:', error);
+    }
 }
 
 function generateTeamColors() {
@@ -827,7 +835,7 @@ function generateTeamColors() {
     return teamColors;
 }
 
-function drawCompleteTeamRoute(team, teamColor, showWaypoints = true) {
+async function drawCompleteTeamRoute(team, teamColor, showWaypoints = true) {
     // Startpunkt: Team-Zuhause
     let currentLocation = {
         lat: team.lat, 
@@ -838,6 +846,7 @@ function drawCompleteTeamRoute(team, teamColor, showWaypoints = true) {
     
     const route = [currentLocation];
     let stepNumber = 1;
+    const routePromises = []; // Für paralleles Laden
     
     // Gänge in chronologischer Reihenfolge
     const courseOrder = ['appetizer', 'main_course', 'dessert'];
@@ -857,8 +866,8 @@ function drawCompleteTeamRoute(team, teamColor, showWaypoints = true) {
                 
                 route.push(nextLocation);
                 
-                // Zeichne Route-Segment
-                loadRouteGeometry(currentLocation, nextLocation, teamColor, showWaypoints);
+                // Füge Route-Segment zu parallelen Promises hinzu
+                routePromises.push(loadRouteGeometry(currentLocation, nextLocation, teamColor, showWaypoints));
                 currentLocation = nextLocation;
             }
         } else if (team.course === course) {
@@ -880,7 +889,14 @@ function drawCompleteTeamRoute(team, teamColor, showWaypoints = true) {
         };
         
         route.push(afterpartyLocation);
-        loadRouteGeometry(currentLocation, afterpartyLocation, teamColor, showWaypoints);
+        routePromises.push(loadRouteGeometry(currentLocation, afterpartyLocation, teamColor, showWaypoints));
+    }
+    
+    // Lade alle Routen parallel für Performance
+    try {
+        await Promise.all(routePromises);
+    } catch (error) {
+        console.warn('Einige Routen konnten nicht geladen werden:', error);
     }
 }
 
@@ -1035,39 +1051,95 @@ function updateMapStats() {
     document.getElementById('max-distance').textContent = `${maxDistance} km`;
 }
 
-// Variable für ausgewähltes Team
-let selectedTeam = null;
+// Globale Team-Auswahl (synchron zwischen Karte und Tabs)
+let selectedTeamGlobal = null;
+let selectedTeam = null; // Legacy für Kompatibilität
 
-// Funktion für Team-spezifische Routen-Anzeige
-function selectTeamForRoutes(team) {
+// Globale Funktion - auch von included templates aufrufbar
+window.selectGlobalTeam = function(teamId, teamName) {
+    selectedTeamGlobal = teamId;
+    
+    console.log(`Team ausgewählt: ${teamName} (ID: ${teamId})`);
+    
+    // Finde Team-Objekt
+    const team = teamData.find(t => t.id == teamId);
+    
+    if (!team) {
+        console.error(`Team mit ID ${teamId} nicht gefunden in teamData:`, teamData);
+        return;
+    }
+    
+    // Legacy-Variable setzen
     selectedTeam = team;
     
-    // Update UI
-    const teamInfo = document.getElementById('selected-team-info');
-    if (teamInfo) {
-        teamInfo.innerHTML = `
-            <div class="alert alert-info">
-                <strong>🔍 Ausgewähltes Team:</strong> ${team.name} 
-                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="clearSelectedTeam()">
-                    <i class="bi bi-x"></i> Alle zeigen
+    // Karte synchronisieren
+    if (team) {
+        selectTeamForRoutes(team);
+    }
+    
+    // Tabs synchronisieren  
+    highlightTeam(teamId, teamName);
+    
+    // Globale Info aktualisieren
+    updateGlobalTeamSelection(teamName);
+}
+
+// Globale Funktion - auch von included templates aufrufbar
+window.clearGlobalTeamSelection = function() {
+    selectedTeamGlobal = null;
+    selectedTeam = null;
+    clearSelectedTeam();
+    clearTeamHighlight();
+    
+    // Globale Info leeren
+    const globalInfo = document.getElementById('global-team-info');
+    if (globalInfo) {
+        globalInfo.innerHTML = '';
+    }
+}
+
+function updateGlobalTeamSelection(teamName) {
+    const globalInfo = document.getElementById('global-team-info');
+    if (globalInfo) {
+        globalInfo.innerHTML = `
+            <div class="alert alert-success d-flex justify-content-between align-items-center mb-2">
+                <span><i class="bi bi-target"></i> <strong>Ausgewähltes Team:</strong> ${teamName}</span>
+                <button class="btn btn-outline-dark btn-sm" onclick="clearGlobalTeamSelection()">
+                    <i class="bi bi-x"></i> Auswahl löschen
                 </button>
             </div>
         `;
     }
-    
+}
+
+// Legacy-Funktionen für Rückwärtskompatibilität
+function selectTeamForRoutes(team) {
     // Marker-Styling aktualisieren
     updateMarkerStyles();
     
-    // Routen für ausgewähltes Team zeichnen
+    /* Info-Box aktualisieren
+    const teamInfo = document.getElementById('selected-team-info');
+    if (teamInfo) {
+        teamInfo.innerHTML = `
+            <div class="alert alert-info d-flex justify-content-between align-items-center">
+                <span><strong>Route-Filter aktiv:</strong> ${team.name}</span>
+                <button class="btn btn-outline-secondary btn-sm" onclick="clearGlobalTeamSelection()">
+                    <i class="bi bi-x"></i> Filter löschen
+                </button>
+            </div>
+        `;
+    }*/
+    
+    // Routen neu zeichnen
     if (document.getElementById('showRoutes').checked) {
         drawTeamRoutes(team);
     }
 }
 
 function clearSelectedTeam() {
-    selectedTeam = null;
+    updateMarkerStyles();
     
-    // UI zurücksetzen
+    // Info-Box leeren
     const teamInfo = document.getElementById('selected-team-info');
     if (teamInfo) {
         teamInfo.innerHTML = '';
@@ -1125,7 +1197,7 @@ function updateMarkerStyles() {
     });
 }
 
-function drawTeamRoutes(selectedTeam) {
+async function drawTeamRoutes(selectedTeam) {
     // Lösche bestehende Routen und Waypoints
     routeLines.forEach(line => map.removeLayer(line));
     routeLines = [];
@@ -1136,16 +1208,39 @@ function drawTeamRoutes(selectedTeam) {
     const teamColor = teamColors[selectedTeam.id] || '#007bff';
     
     // Zeichne komplette Abendroute für das ausgewählte Team mit Waypoints
-    drawCompleteTeamRoute(selectedTeam, teamColor, true);
+    await drawCompleteTeamRoute(selectedTeam, teamColor, true);
+    console.log(`Route für Team ${selectedTeam.name} geladen`);
 }
 
 // Event-Listener für Karten-Steuerung
-document.getElementById('showRoutes').addEventListener('change', function() {
+document.getElementById('showRoutes').addEventListener('change', async function() {
     if (this.checked) {
-        if (selectedTeam) {
-            drawTeamRoutes(selectedTeam);
-        } else {
-            drawRoutes();
+        // Loading-Indikator anzeigen
+        const routeTab = document.querySelector('[href="#routes"]');
+        const originalText = routeTab.innerHTML;
+        routeTab.innerHTML = '<i class="bi bi-hourglass-split"></i> Routen laden...';
+        
+        try {
+            if (selectedTeamGlobal) {
+                const selectedTeam = teamData.find(t => t.id == selectedTeamGlobal);
+                if (selectedTeam) {
+                    await drawTeamRoutes(selectedTeam);
+                }
+            } else {
+                await drawRoutes();
+            }
+            
+            // Erfolgs-Nachricht
+            routeTab.innerHTML = '<i class="bi bi-check-circle text-success"></i> Routen geladen';
+            setTimeout(() => {
+                routeTab.innerHTML = originalText;
+            }, 2000);
+        } catch (error) {
+            console.error('Fehler beim Laden der Routen:', error);
+            routeTab.innerHTML = '<i class="bi bi-exclamation-triangle text-danger"></i> Routen-Fehler';
+            setTimeout(() => {
+                routeTab.innerHTML = originalText;
+            }, 3000);
         }
     } else {
         routeLines.forEach(line => map.removeLayer(line));
@@ -1167,11 +1262,12 @@ function highlightTeam(teamId, teamName) {
     
     highlightedTeamId = teamId;
     
-    // Alle Cards mit diesem Team hervorheben
+    // Alle Cards mit diesem Team hervorheben (auch in Gang-Tabs)
     document.querySelectorAll(`.team-card[data-team-id="${teamId}"]`).forEach(card => {
         card.classList.add('highlighted-team');
         card.style.backgroundColor = '#fff3cd';
         card.style.border = '2px solid #ffc107';
+        card.style.borderRadius = '8px';
         card.style.boxShadow = '0 4px 8px rgba(255, 193, 7, 0.3)';
     });
     
@@ -1182,18 +1278,18 @@ function highlightTeam(teamId, teamName) {
         badge.style.transform = 'scale(1.1)';
     });
     
-    // Info-Banner anzeigen
+    /* Info-Banner anzeigen
     const highlightInfo = document.getElementById('highlighted-team-info');
     if (highlightInfo) {
         highlightInfo.innerHTML = `
-            <div class="alert alert-warning">
-                <strong>🎯 Hervorgehobenes Team:</strong> ${teamName}
-                <button type="button" class="btn btn-sm btn-outline-warning ms-2" onclick="clearTeamHighlight()">
+            <div class="alert alert-warning d-flex justify-content-between align-items-center mb-3">
+                <span><i class="bi bi-star-fill"></i> <strong>Hervorgehoben:</strong> ${teamName}</span>
+                <button class="btn btn-outline-dark btn-sm" onclick="clearGlobalTeamSelection()">
                     <i class="bi bi-x"></i> Hervorhebung löschen
                 </button>
             </div>
         `;
-    }
+    }*/
 }
 
 function clearTeamHighlight() {
@@ -1204,6 +1300,7 @@ function clearTeamHighlight() {
         card.classList.remove('highlighted-team');
         card.style.backgroundColor = '';
         card.style.border = '';
+        card.style.borderRadius = '';
         card.style.boxShadow = '';
     });
     

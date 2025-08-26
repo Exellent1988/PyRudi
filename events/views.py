@@ -712,6 +712,10 @@ def start_optimization(request, event_id):
                     logger.info(
                         f"🏠 Team '{team.name}' hostet {course_hosted} für {len(guest_teams)} Gäste")
 
+        # Vorberechnung aller Route-Geometrien für schnelle Karten-Darstellung
+        logger.info("🗺️ Berechne Route-Geometrien für Kartendarstellung...")
+        precalculate_route_geometries(event, solution['assignments'])
+
         # Optimierung abschließen
         optimization_run.status = 'completed'
         optimization_run.completed_at = timezone.now()
@@ -728,7 +732,8 @@ def start_optimization(request, event_id):
             'mip_objective_value': solution['objective_value'],
             'penalties': solution['penalties'],
             'travel_times': solution['travel_times'],
-            'hosting_distribution': solution['hosting']
+            'hosting_distribution': solution['hosting'],
+            'route_geometries_precalculated': True
         })
         optimization_run.save()
 
@@ -973,7 +978,7 @@ def adjust_assignment(request, event_id, assignment_id):
 @login_required
 def get_route_geometry(request, event_id):
     """
-    API-Endpoint für Route-Geometrie (echte Fußwege für Kartendarstellung)
+    API-Endpoint für Route-Geometrie (cached in DB für bessere Performance)
     """
     event = get_object_or_404(Event, id=event_id)
 
@@ -991,26 +996,100 @@ def get_route_geometry(request, event_id):
         return JsonResponse({'error': 'Fehlende Koordinaten'}, status=400)
 
     try:
-        start_coords = (float(start_lat), float(start_lng))
-        end_coords = (float(end_lat), float(end_lng))
+        from .models import RouteGeometry
 
-        # Hole Route-Geometrie
-        from .routing import get_route_calculator
-        route_calc = get_route_calculator()
-
-        route_points = route_calc.get_walking_route_geometry(
-            start_coords, end_coords)
+        # Hole oder erstelle Route aus DB (viel schneller!)
+        route = RouteGeometry.get_or_create_route(
+            event=event,
+            start_lat=float(start_lat),
+            start_lng=float(start_lng),
+            end_lat=float(end_lat),
+            end_lng=float(end_lng)
+        )
 
         return JsonResponse({
             'success': True,
-            'route_points': route_points,
-            'point_count': len(route_points) if route_points else 0
+            'route_points': route.geometry_points,
+            'point_count': route.point_count,
+            'distance': route.distance,
+            'source': 'database' if route.geometry_points else 'api',
+            'cached': True
         })
 
     except ValueError:
         return JsonResponse({'error': 'Ungültige Koordinaten'}, status=400)
     except Exception as e:
         return JsonResponse({'error': f'Route-Fehler: {str(e)}'}, status=500)
+
+
+def precalculate_route_geometries(event, assignments):
+    """
+    Berechnet alle Route-Geometrien für ein Event im Voraus
+    Wird nach der Optimierung aufgerufen für sofortige Karten-Performance
+    """
+    from .models import RouteGeometry
+    import time
+
+    routes_to_calc = set()
+    route_count = 0
+
+    # Sammle alle notwendigen Routen
+    for assignment_data in assignments:
+        team = assignment_data['team']
+        hosts = assignment_data['hosts']
+
+        # Team-Koordinaten
+        if hasattr(team, 'latitude') and hasattr(team, 'longitude') and team.latitude and team.longitude:
+            team_coords = (float(team.latitude), float(team.longitude))
+
+            # Routen zu Hosting-Locations
+            for course, host_team in hosts.items():
+                if host_team and host_team != team:
+                    if hasattr(host_team, 'latitude') and hasattr(host_team, 'longitude') and host_team.latitude and host_team.longitude:
+                        host_coords = (float(host_team.latitude),
+                                       float(host_team.longitude))
+
+                        # Route von Team zu Host hinzufügen
+                        route_key = (
+                            team_coords[0], team_coords[1], host_coords[0], host_coords[1])
+                        routes_to_calc.add(route_key)
+
+            # Route zur Afterparty (falls vorhanden)
+            if hasattr(event, 'after_party') and event.after_party:
+                if hasattr(event.after_party, 'latitude') and hasattr(event.after_party, 'longitude') and event.after_party.latitude and event.after_party.longitude:
+                    party_coords = (float(event.after_party.latitude), float(
+                        event.after_party.longitude))
+                    route_key = (
+                        team_coords[0], team_coords[1], party_coords[0], party_coords[1])
+                    routes_to_calc.add(route_key)
+
+    logger.info(f"🗺️ Berechne {len(routes_to_calc)} Route-Geometrien...")
+
+    # Berechne alle Routen parallel (mit Rate-Limiting)
+    for start_lat, start_lng, end_lat, end_lng in routes_to_calc:
+        try:
+            # Prüfe ob Route bereits existiert
+            route = RouteGeometry.get_or_create_route(
+                event=event,
+                start_lat=start_lat,
+                start_lng=start_lng,
+                end_lat=end_lat,
+                end_lng=end_lng
+            )
+            route_count += 1
+
+            # Rate-Limiting für API-Freundlichkeit
+            if route_count % 10 == 0:
+                time.sleep(1)  # Kurze Pause nach 10 Routen
+                logger.info(
+                    f"📊 {route_count}/{len(routes_to_calc)} Routen vorberechnet")
+
+        except Exception as e:
+            logger.warning(
+                f"Fehler beim Vorberechnen der Route {start_lat:.4f},{start_lng:.4f} → {end_lat:.4f},{end_lng:.4f}: {e}")
+
+    logger.info(
+        f"✅ {route_count} Route-Geometrien vorberechnet - Karte lädt jetzt sofort!")
 
 
 @login_required

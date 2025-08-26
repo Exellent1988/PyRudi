@@ -1,12 +1,14 @@
 <div class="row g-3">
     {% for assignment in assignments %}
     <div class="col-lg-6">
-        <div class="card border-0 {% if assignment.course == course %}border-primary{% else %}bg-light{% endif %}">
+        <div class="card border-0 {% if assignment.course == course %}border-primary{% else %}bg-light{% endif %} team-card" 
+             data-team-id="{{ assignment.team.id }}" data-team-name="{{ assignment.team.name }}">
             <div class="card-header {% if assignment.course == course %}bg-primary text-white{% else %}bg-secondary text-white{% endif %}">
                 <div class="d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">
                         <i class="bi bi-people"></i>
-                        {{ assignment.team.name }}
+                        <span class="team-name-clickable" style="cursor: pointer; text-decoration: underline;" 
+                              onclick="selectGlobalTeam('{{ assignment.team.id }}', '{{ assignment.team.name }}')">{{ assignment.team.name }}</span>
                         {% if assignment.course == course %}
                         <span class="badge bg-light text-dark ms-2">HOST</span>
                         {% endif %}
@@ -33,7 +35,10 @@
                     <div class="small mt-1">
                         Gäste: 
                         {% for guest in assignment.guests.all %}
-                        <span class="badge bg-secondary me-1">{{ guest.name }}</span>
+                        <span class="badge bg-secondary me-1 guest-badge team-clickable" 
+                              data-team-id="{{ guest.id }}" 
+                              style="cursor: pointer;"
+                              onclick="selectGlobalTeam('{{ guest.id }}', '{{ guest.name }}')">{{ guest.name }}</span>
                         {% empty %}
                         <span class="text-muted">Keine Gäste zugewiesen</span>
                         {% endfor %}
@@ -45,15 +50,18 @@
                     <strong><i class="bi bi-person"></i> Gast bei {{ course_name }}</strong>
                     <div class="small mt-1">
                         {% if course == 'appetizer' and assignment.hosts_appetizer %}
-                        Host: <strong>{{ assignment.hosts_appetizer.name }}</strong>
+                        Host: <strong class="team-name-clickable" style="cursor: pointer; text-decoration: underline;" 
+                                      onclick="selectGlobalTeam('{{ assignment.hosts_appetizer.id }}', '{{ assignment.hosts_appetizer.name }}')">{{ assignment.hosts_appetizer.name }}</strong>
                         <br><i class="bi bi-geo-alt"></i> {{ assignment.hosts_appetizer.home_address }}
                         <br>Entfernung: {{ assignment.distance_to_appetizer }} km
                         {% elif course == 'main_course' and assignment.hosts_main_course %}
-                        Host: <strong>{{ assignment.hosts_main_course.name }}</strong>
+                        Host: <strong class="team-name-clickable" style="cursor: pointer; text-decoration: underline;" 
+                                      onclick="selectGlobalTeam('{{ assignment.hosts_main_course.id }}', '{{ assignment.hosts_main_course.name }}')">{{ assignment.hosts_main_course.name }}</strong>
                         <br><i class="bi bi-geo-alt"></i> {{ assignment.hosts_main_course.home_address }}
                         <br>Entfernung: {{ assignment.distance_to_main_course }} km
                         {% elif course == 'dessert' and assignment.hosts_dessert %}
-                        Host: <strong>{{ assignment.hosts_dessert.name }}</strong>
+                        Host: <strong class="team-name-clickable" style="cursor: pointer; text-decoration: underline;" 
+                                      onclick="selectGlobalTeam('{{ assignment.hosts_dessert.id }}', '{{ assignment.hosts_dessert.name }}')">{{ assignment.hosts_dessert.name }}</strong>
                         <br><i class="bi bi-geo-alt"></i> {{ assignment.hosts_dessert.home_address }}
                         <br>Entfernung: {{ assignment.distance_to_dessert }} km
                         {% else %}
