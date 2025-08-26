@@ -68,16 +68,19 @@ class RunningDinnerOptimizer:
         cache.set(self.progress_key, progress, timeout=300)
 
         # Log-Eintrag hinzufügen
+        logs = cache.get(self.log_key, [])
+        log_message = f"Schritt {step}/{total_steps}: {task}"
         if details:
-            logs = cache.get(self.log_key, [])
-            logs.append({
-                'timestamp': timezone.now().strftime('%H:%M:%S'),
-                'message': details
-            })
-            # Nur die letzten 50 Log-Einträge behalten
-            if len(logs) > 50:
-                logs = logs[-50:]
-            cache.set(self.log_key, logs, timeout=300)
+            log_message += f" - {details}"
+
+        logs.append({
+            'timestamp': timezone.now().strftime('%H:%M:%S'),
+            'message': log_message
+        })
+        # Nur die letzten 50 Log-Einträge behalten
+        if len(logs) > 50:
+            logs = logs[-50:]
+        cache.set(self.log_key, logs, timeout=300)
 
     def load_teams(self):
         """Lade bestätigte Teams für das Event und zusätzliche Features"""
@@ -87,26 +90,31 @@ class RunningDinnerOptimizer:
             self.event.team_registrations.filter(status='confirmed')
             .select_related('team')
         )
-        
+
         # Filtere Teams nach Teilnahme-Art
         all_teams = [reg.team for reg in self.team_registrations]
-        
+
         # Teams die als Host UND Gast teilnehmen können
-        self.teams = [team for team in all_teams if team.can_participate_as_host and team.can_participate_as_guest]
-        
+        self.teams = [
+            team for team in all_teams if team.can_participate_as_host and team.can_participate_as_guest]
+
         # Teams die nur als Gäste teilnehmen
-        self.guest_only_teams = [team for team in all_teams if team.participation_type == 'guest_only']
-        
+        self.guest_only_teams = [
+            team for team in all_teams if team.participation_type == 'guest_only']
+
         # Teams ohne Küche (brauchen Gastküche wenn sie hosten)
-        self.teams_needing_kitchen = [team for team in self.teams if team.needs_guest_kitchen]
+        self.teams_needing_kitchen = [
+            team for team in self.teams if team.needs_guest_kitchen]
 
         if len(self.teams) < 3:
             raise ValueError(
                 f"Mindestens 3 Host-Teams erforderlich, aber nur {len(self.teams)} verfügbar")
-        
-        logger.info(f"🎯 Optimiere {len(self.teams)} Host-Teams für Event '{self.event.name}'")
+
+        logger.info(
+            f"🎯 Optimiere {len(self.teams)} Host-Teams für Event '{self.event.name}'")
         logger.info(f"👥 {len(self.guest_only_teams)} Nur-Gast-Teams verfügbar")
-        logger.info(f"🏠 {len(self.teams_needing_kitchen)} Teams brauchen Gastküche")
+        logger.info(
+            f"🏠 {len(self.teams_needing_kitchen)} Teams brauchen Gastküche")
 
         # Lade Gastküchen
         self.guest_kitchens = list(
@@ -535,15 +543,19 @@ class RunningDinnerOptimizer:
             logger.info(
                 f"📍 {course}: {len(course_hosts)} Teams hosten diesen Kurs")
 
-        # SCHRITT 2: Für jedes Team berechne seine Route (welche Hosts besucht es)
+        # SCHRITT 2: Optimiere Team-Diversität (FM-OR inspiriert)
+        # Ziel: Teams sollen sich möglichst nur einmal treffen
+        logger.info("🔄 Optimiere Team-Diversität...")
+        self._optimize_team_diversity(
+            solution, host_teams_by_course, team_hosting_map)
+
+        # SCHRITT 4: Für jedes Team berechne seine Route (welche Hosts besucht es)
         # WICHTIG: Korrekte Route-Berechnung: Home → Vorspeise → Hauptgang → Nachspeise
         # (nicht immer von Home aus, sondern von der aktuellen Position!)
         total_distance = 0
-        guests_per_host = {}  # host_team_id -> [guest_team_objects]
 
-        # Initialisiere Gäste-Listen
-        for team in self.teams:
-            guests_per_host[team.id] = []
+        # Verwende optimierte Gäste-Zuordnungen aus Diversitäts-Optimierung
+        guests_per_host = solution['guests_per_host']
 
         for team in self.teams:
             my_hosting_course = team_hosting_map[team.id]
@@ -562,39 +574,33 @@ class RunningDinnerOptimizer:
                     # Aktuelle Position bleibt zuhause (Team-Home)
                     current_location = team
                 else:
-                    # Finde besten Host (mit wenigsten Gästen + kürzeste Entfernung)
-                    best_host = None
-                    best_score = float('inf')
+                    # Für andere Kurse: Finde Host aus optimierter Diversitäts-Zuordnung
+                    found_host = None
+                    for host_id, guest_list in guests_per_host.items():
+                        if team in guest_list:
+                            # Finde das Host-Team-Objekt
+                            for potential_host in host_teams_by_course[course]:
+                                if potential_host.id == host_id:
+                                    found_host = potential_host
+                                    break
+                            if found_host:
+                                break
 
-                    for potential_host in host_teams_by_course[course]:
-                        current_guest_count = len(
-                            guests_per_host[potential_host.id])
-                        # KORREKT: Distanz von aktueller Position zum Host
-                        distance = self.distances[(
-                            current_location.id, potential_host.id)]
-
-                        # Verbessertes Scoring: Gleichmäßige Verteilung stark priorisieren
-                        ideal_guests_per_host = (
-                            n_teams - len(host_teams_by_course[course])) / len(host_teams_by_course[course])
-                        guest_penalty = max(
-                            0, current_guest_count - ideal_guests_per_host) * 50  # Höher gewichtet!
-
-                        # Score = Stark gewichtetes Gäste-Ungleichgewicht + geringe Distanz-Komponente
-                        score = guest_penalty + distance * 0.3  # Distanz nur 30% Gewichtung
-
-                        if score < best_score:
-                            best_score = score
-                            best_host = potential_host
-
-                    hosts[course] = best_host
-                    distances[course] = self.distances[(
-                        current_location.id, best_host.id)]
-
-                    # Team bewegt sich zum neuen Host-Standort
-                    current_location = best_host
-
-                    # Füge mich als Gast zu diesem Host hinzu
-                    guests_per_host[best_host.id].append(team)
+                    if found_host:
+                        hosts[course] = found_host
+                        distances[course] = self.distances[(
+                            current_location.id, found_host.id)]
+                        # Team bewegt sich zum neuen Host-Standort
+                        current_location = found_host
+                    else:
+                        logger.warning(
+                            f"⚠️ Keine Host-Zuordnung für {team.name} bei {course} gefunden!")
+                        # Fallback: Nehme ersten verfügbaren Host
+                        fallback_host = host_teams_by_course[course][0]
+                        hosts[course] = fallback_host
+                        distances[course] = self.distances[(
+                            current_location.id, fallback_host.id)]
+                        current_location = fallback_host
 
             team_total_distance = sum(distances.values())
             total_distance += team_total_distance
@@ -641,71 +647,204 @@ class RunningDinnerOptimizer:
 
         return optimized_solution
 
+    def _optimize_team_diversity(self, solution, host_teams_by_course, team_hosting_map):
+        """
+        Optimiert Team-Zuordnungen für maximale Diversität
+        Basiert auf fm-or Constraint: Teams sollen sich maximal einmal treffen
+
+        Strategie:
+        1. Tracke alle Team-Begegnungen
+        2. Erstelle Gast-Zuordnungen die Wiederholungen minimieren  
+        3. Gewichte Diversität höher als Distanz
+        """
+        logger.info("🎯 Starte Diversitäts-Optimierung...")
+        self._update_progress(3, 5, "Diversitäts-Optimierung",
+                              f"Optimiere {len(self.teams)} Teams für maximale Vielfalt")
+
+        # Track alle Team-Begegnungen: team_pair -> anzahl_treffen
+        team_meetings = {}
+
+        # Initialisiere Gäste-Listen für jeden Host
+        guests_per_host = {}  # host_team_id -> [guest_team_objects]
+        for course, host_teams in host_teams_by_course.items():
+            for host_team in host_teams:
+                guests_per_host[host_team.id] = []
+
+        # Für jeden Kurs optimiere Gast-Zuordnungen
+        for course in self.courses:
+            course_display = {'appetizer': 'Vorspeise',
+                              'main_course': 'Hauptgang', 'dessert': 'Nachspeise'}[course]
+            logger.info(
+                f"🍽️ Optimiere {course_display}-Zuordnungen für Diversität...")
+
+            host_teams = host_teams_by_course[course]
+            guest_teams = [
+                t for t in self.teams if team_hosting_map[t.id] != course]
+
+            # Ziel: Verteile guest_teams auf host_teams mit maximaler Diversität
+            # Standard: 2 Gäste pro Host (bei 12 Teams, 4 Hosts = 8 Gäste → 2 pro Host)
+            guests_per_host_target = len(guest_teams) // len(host_teams)
+            extra_guests = len(guest_teams) % len(host_teams)
+
+            # Greedy-Algorithmus: Für jeden Gast finde besten Host
+            guest_teams_copy = guest_teams.copy()
+            random.shuffle(guest_teams_copy)  # Randomisierung für Fairness
+
+            for guest_team in guest_teams_copy:
+                best_host = None
+                best_score = float('inf')
+
+                for host_team in host_teams:
+                    current_guest_count = len(guests_per_host[host_team.id])
+                    target_guest_count = guests_per_host_target + \
+                        (1 if host_teams.index(host_team) < extra_guests else 0)
+
+                    # Skip wenn Host bereits voll
+                    if current_guest_count >= target_guest_count:
+                        continue
+
+                    # Berechne Diversitäts-Score
+                    diversity_penalty = 0
+                    for existing_guest in guests_per_host[host_team.id]:
+                        # Prüfe ob guest_team und existing_guest sich bereits getroffen haben
+                        pair_key = tuple(
+                            sorted([guest_team.id, existing_guest.id]))
+                        meetings_count = team_meetings.get(pair_key, 0)
+                        diversity_penalty += meetings_count * 1000  # Hohe Strafe für Wiederholungen
+
+                        # Prüfe auch mit dem Host selbst
+                        host_pair_key = tuple(
+                            sorted([guest_team.id, host_team.id]))
+                        host_meetings = team_meetings.get(host_pair_key, 0)
+                        diversity_penalty += host_meetings * 1000
+
+                    # Berechne Distanz-Score (geringere Gewichtung)
+                    distance_score = self.distances.get(
+                        (guest_team.id, host_team.id), 0) * 1  # Niedrige Gewichtung
+
+                    # Gesamt-Score: Diversität >> Distanz
+                    total_score = diversity_penalty + distance_score
+
+                    if total_score < best_score:
+                        best_score = total_score
+                        best_host = host_team
+
+                if best_host:
+                    guests_per_host[best_host.id].append(guest_team)
+
+                    # Update Meeting-Tracker
+                    for existing_guest in guests_per_host[best_host.id]:
+                        if existing_guest.id != guest_team.id:
+                            pair_key = tuple(
+                                sorted([guest_team.id, existing_guest.id]))
+                            team_meetings[pair_key] = team_meetings.get(
+                                pair_key, 0) + 1
+
+                    # Meeting mit Host tracken
+                    host_pair_key = tuple(
+                        sorted([guest_team.id, best_host.id]))
+                    team_meetings[host_pair_key] = team_meetings.get(
+                        host_pair_key, 0) + 1
+
+                    logger.debug(
+                        f"   👥 {guest_team.name} → {best_host.name} (Score: {best_score:.1f})")
+
+        # Speichere optimierte Zuordnungen in solution
+        solution['guests_per_host'] = guests_per_host
+        solution['team_meetings'] = team_meetings
+
+        # Analysiere Diversitäts-Qualität
+        total_meetings = sum(team_meetings.values())
+        repeated_meetings = sum(
+            1 for count in team_meetings.values() if count > 1)
+
+        logger.info(f"🎯 Diversitäts-Analyse:")
+        logger.info(f"   📊 Gesamt Team-Begegnungen: {total_meetings}")
+        logger.info(f"   🔄 Wiederholte Begegnungen: {repeated_meetings}")
+        logger.info(
+            f"   📈 Diversitäts-Rate: {((total_meetings - repeated_meetings) / total_meetings * 100):.1f}%")
+
+        return solution
+
     def assign_guest_kitchens(self, solution):
         """
         Weise Teams automatisch zu Gastküchen zu, wenn dies vorteilhaft ist
         Logik: Teams mit langen Wegen zu Host-Locations nutzen nähere Gastküchen
         """
         logger.info("🏠 Starte automatische Gastküchen-Zuordnung...")
-        
+        self._update_progress(4, 5, "Gastküchen-Zuordnung",
+                              f"Analysiere {len(self.guest_kitchens)} Gastküchen für optimale Zuordnung")
+
         # Lösche alte Gastküchen-Zuordnungen für dieses Event
         from events.models import TeamGuestKitchenAssignment
         TeamGuestKitchenAssignment.objects.filter(
             team__in=self.teams,
             guest_kitchen__event=self.event
         ).delete()
-        
+
         assignments_created = 0
         distance_savings = 0
         mandatory_assignments = 0
 
         # SCHRITT 1: Zwingend erforderliche Zuordnungen (Teams ohne Küche)
-        logger.info("🔴 Verarbeite ZWINGEND erforderliche Gastküchen-Zuordnungen...")
-        
+        logger.info(
+            "🔴 Verarbeite ZWINGEND erforderliche Gastküchen-Zuordnungen...")
+
         for course in self.courses:
-            course_display = {'appetizer': 'Vorspeise', 'main_course': 'Hauptgang', 'dessert': 'Nachspeise'}[course]
-            
+            course_display = {'appetizer': 'Vorspeise',
+                              'main_course': 'Hauptgang', 'dessert': 'Nachspeise'}[course]
+
             # Teams ohne Küche die für diesen Kurs hosten
             mandatory_teams = []
             for assignment in solution['assignments']:
-                if (assignment['course_hosted'] == course and 
-                    assignment['team'].needs_guest_kitchen):
+                if (assignment['course_hosted'] == course and
+                        assignment['team'].needs_guest_kitchen):
                     mandatory_teams.append(assignment)
-            
+
             if mandatory_teams:
-                logger.info(f"🔴 {len(mandatory_teams)} Teams ohne Küche hosten {course_display}")
-                
-                # Verfügbare Gastküchen für diesen Kurs  
+                logger.info(
+                    f"🔴 {len(mandatory_teams)} Teams ohne Küche hosten {course_display}")
+
+                # Verfügbare Gastküchen für diesen Kurs
                 available_kitchens = [
-                    k for k in self.guest_kitchens 
-                    if k.can_host_course(course) and not k.is_full
+                    k for k in self.guest_kitchens
+                    if k.can_host_course(course)
                 ]
-                
+
                 if len(available_kitchens) == 0:
-                    raise ValueError(f"KRITISCHER FEHLER: Teams ohne Küche hosten {course_display}, aber keine Gastküchen verfügbar!")
-                
-                # Zuordnung der zwingend erforderlichen Teams
-                kitchen_usage = {k.id: 0 for k in available_kitchens}
-                
+                    raise ValueError(
+                        f"KRITISCHER FEHLER: Teams ohne Küche hosten {course_display}, aber keine Gastküchen verfügbar!")
+
+                # Zuordnung der zwingend erforderlichen Teams - berücksichtige bereits bestehende Zuordnungen
+                kitchen_usage = {}
+                for kitchen in available_kitchens:
+                    current_usage = kitchen.using_teams.filter(
+                        course=course,
+                        is_active=True
+                    ).count()
+                    kitchen_usage[kitchen.id] = current_usage
+
                 for assignment in mandatory_teams:
                     team = assignment['team']
-                    
+
                     # Finde beste verfügbare Gastküche
                     best_kitchen = None
                     best_distance = float('inf')
-                    
+
                     for kitchen in available_kitchens:
                         if kitchen_usage[kitchen.id] >= kitchen.max_teams:
                             continue
-                            
-                        distance = self.guest_kitchen_distances.get((team.id, kitchen.id), float('inf'))
+
+                        distance = self.guest_kitchen_distances.get(
+                            (team.id, kitchen.id), float('inf'))
                         if distance < best_distance:
                             best_distance = distance
                             best_kitchen = kitchen
-                    
+
                     if not best_kitchen:
-                        raise ValueError(f"KRITISCHER FEHLER: Keine Gastküche für Team '{team.name}' verfügbar (alle belegt)!")
-                    
+                        raise ValueError(
+                            f"KRITISCHER FEHLER: Keine Gastküche für Team '{team.name}' verfügbar (alle belegt)!")
+
                     # ZWINGEND ERFORDERLICHE Zuordnung erstellen
                     try:
                         kitchen_assignment = TeamGuestKitchenAssignment.objects.create(
@@ -714,37 +853,48 @@ class RunningDinnerOptimizer:
                             course=course,
                             notes=f"ZWINGEND erforderlich (Team ohne Küche). Distanz: {best_distance:.1f}km"
                         )
-                        
+
                         kitchen_usage[best_kitchen.id] += 1
                         mandatory_assignments += 1
                         assignments_created += 1
-                        
-                        logger.info(f"🔴 ZWINGEND: {team.name} → {best_kitchen.name} ({course_display}) - {best_distance:.1f}km")
-                        
+
+                        logger.info(
+                            f"🔴 ZWINGEND: {team.name} → {best_kitchen.name} ({course_display}) - {best_distance:.1f}km")
+
                     except Exception as e:
-                        raise ValueError(f"KRITISCHER FEHLER: Konnte Team '{team.name}' nicht zu Gastküche zuweisen: {e}")
+                        raise ValueError(
+                            f"KRITISCHER FEHLER: Konnte Team '{team.name}' nicht zu Gastküche zuweisen: {e}")
 
         # SCHRITT 2: Optionale Zuordnungen (Distanz-Optimierung)
-        logger.info("🟡 Verarbeite optionale Gastküchen-Zuordnungen (Distanz-Optimierung)...")
-        
+        logger.info(
+            "🟡 Verarbeite optionale Gastküchen-Zuordnungen (Distanz-Optimierung)...")
+
         # Analysiere jeden Kurs separat für optionale Zuordnungen
         for course in self.courses:
-            course_display = {'appetizer': 'Vorspeise', 'main_course': 'Hauptgang', 'dessert': 'Nachspeise'}[course]
-            logger.info(f"🍽️ Analysiere optionale {course_display}-Zuordnungen...")
+            course_display = {'appetizer': 'Vorspeise',
+                              'main_course': 'Hauptgang', 'dessert': 'Nachspeise'}[course]
+            logger.info(
+                f"🍽️ Analysiere optionale {course_display}-Zuordnungen...")
 
-            # Verfügbare Gastküchen für diesen Kurs
-            available_kitchens = [
-                k for k in self.guest_kitchens
-                if k.can_host_course(course) and not k.is_full
-            ]
+            # Verfügbare Gastküchen für diesen Kurs (nach zwingenden Zuordnungen)
+            available_kitchens = []
+            kitchen_usage = {}
+
+            for kitchen in self.guest_kitchens:
+                if kitchen.can_host_course(course):
+                    current_usage = kitchen.using_teams.filter(
+                        course=course,
+                        is_active=True
+                    ).count()
+
+                    if current_usage < kitchen.max_teams:
+                        available_kitchens.append(kitchen)
+                        kitchen_usage[kitchen.id] = current_usage
 
             if not available_kitchens:
                 logger.info(
-                    f"   ❌ Keine verfügbaren Gastküchen für {course_display}")
+                    f"   ❌ Keine verfügbaren Gastküchen für optionale {course_display}-Zuordnungen")
                 continue
-
-            # Gastküchen-Kapazitäten tracken
-            kitchen_usage = {k.id: 0 for k in available_kitchens}
 
             # Analysiere alle Teams für diesen Kurs
             for assignment in solution['assignments']:
@@ -820,14 +970,18 @@ class RunningDinnerOptimizer:
             logger.info(f"🏠 Gastküchen-Zuordnung abgeschlossen:")
             logger.info(f"   📊 {assignments_created} Zuordnungen erstellt")
             if mandatory_assignments > 0:
-                logger.info(f"   🔴 {mandatory_assignments} ZWINGEND erforderlich (Teams ohne Küche)")
-                logger.info(f"   🟡 {assignments_created - mandatory_assignments} optional (Distanz-Optimierung)")
+                logger.info(
+                    f"   🔴 {mandatory_assignments} ZWINGEND erforderlich (Teams ohne Küche)")
+                logger.info(
+                    f"   🟡 {assignments_created - mandatory_assignments} optional (Distanz-Optimierung)")
             logger.info(f"   📉 Gesamt-Ersparnis: {distance_savings:.1f}km")
         else:
             if mandatory_assignments > 0:
-                logger.info(f"🏠 {mandatory_assignments} zwingend erforderliche Gastküchen-Zuordnungen erstellt")
+                logger.info(
+                    f"🏠 {mandatory_assignments} zwingend erforderliche Gastküchen-Zuordnungen erstellt")
             else:
-                logger.info("🏠 Keine Gastküchen-Zuordnungen erforderlich oder vorteilhaft")
+                logger.info(
+                    "🏠 Keine Gastküchen-Zuordnungen erforderlich oder vorteilhaft")
 
         return solution
 
@@ -1068,7 +1222,7 @@ class RunningDinnerOptimizer:
         self.calculate_distances()
 
         # Konvertiere TeamAssignments zurück in Lösungsformat
-        assignments = latest_optimization.assignments.all()
+        assignments = latest_optimization.team_assignments.all()
         solution = self._convert_assignments_to_solution(assignments)
 
         self._update_progress(1, 3, "Weitere Optimierung",
@@ -1109,9 +1263,9 @@ class RunningDinnerOptimizer:
             }
 
             distances = {
-                'appetizer': assignment.distance_appetizer or 0,
-                'main_course': assignment.distance_main_course or 0,
-                'dessert': assignment.distance_dessert or 0
+                'appetizer': assignment.distance_to_appetizer or 0,
+                'main_course': assignment.distance_to_main_course or 0,
+                'dessert': assignment.distance_to_dessert or 0
             }
 
             solution_assignment = {
@@ -1173,9 +1327,9 @@ class RunningDinnerOptimizer:
             assignment.hosts_dessert = solution_assignment['hosts']['dessert']
 
             # Update distances
-            assignment.distance_appetizer = solution_assignment['distances']['appetizer']
-            assignment.distance_main_course = solution_assignment['distances']['main_course']
-            assignment.distance_dessert = solution_assignment['distances']['dessert']
+            assignment.distance_to_appetizer = solution_assignment['distances']['appetizer']
+            assignment.distance_to_main_course = solution_assignment['distances']['main_course']
+            assignment.distance_to_dessert = solution_assignment['distances']['dessert']
             assignment.total_distance = solution_assignment['total_distance']
 
             assignment.save()

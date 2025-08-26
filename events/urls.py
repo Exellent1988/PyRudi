@@ -43,4 +43,8 @@ urlpatterns = [
          views.get_optimization_progress, name='get_optimization_progress'),
     path('<int:event_id>/additional-optimization/',
          views.run_additional_optimization, name='run_additional_optimization'),
+
+    # Debug-URLs (nur für Development)
+    path('<int:event_id>/debug-progress/',
+         views.debug_progress, name='debug_progress'),
 ]

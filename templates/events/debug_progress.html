@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Debug Progress Bar{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>🔧 Debug: Live Progress Bar Test</h2>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Event Info -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5>Event: {{ event.name }}</h5>
+                    <p>Event ID: {{ event.id }}</p>
+                    <p>Status: {{ event.status }}</p>
+                </div>
+            </div>
+            
+            <!-- Test Buttons -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h6>🧪 Test Controls</h6>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="showProgressBar()">
+                            <i class="bi bi-play"></i> Zeige Progress Bar
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="simulateProgress()">
+                            <i class="bi bi-gear"></i> Simuliere Fortschritt
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="testAPI()">
+                            <i class="bi bi-cloud"></i> Teste API
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="resetProgress()">
+                            <i class="bi bi-arrow-clockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Live Progress Bar (identisch zu manage_event.html) -->
+            <div id="optimizationProgress" style="display: none;" class="mt-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="bi bi-gear-fill rotate"></i> Optimierung läuft...
+                        </h6>
+                        
+                        <!-- Progress Bar -->
+                        <div class="progress mb-3" style="height: 25px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" 
+                                 id="progressBar"
+                                 style="width: 0%"
+                                 aria-valuenow="0" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                <span id="progressText">0%</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Current Task -->
+                        <div class="mb-3">
+                            <strong>Aktueller Schritt:</strong>
+                            <span id="currentTask">Starte Optimierung...</span>
+                        </div>
+                        
+                        <!-- Collapsible Log -->
+                        <div class="accordion" id="logAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="logHeading">
+                                    <button class="accordion-button collapsed" type="button" 
+                                            data-bs-toggle="collapse" data-bs-target="#logCollapse" 
+                                            aria-expanded="false" aria-controls="logCollapse">
+                                        <i class="bi bi-terminal"></i>&nbsp; Detaillierte Logs anzeigen
+                                    </button>
+                                </h2>
+                                <div id="logCollapse" class="accordion-collapse collapse" 
+                                     aria-labelledby="logHeading" data-bs-parent="#logAccordion">
+                                    <div class="accordion-body">
+                                        <pre id="optimizationLog" class="bg-dark text-light p-3 rounded" style="max-height: 300px; overflow-y: auto; font-size: 0.85em;">Warte auf Logs...</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Debug Output -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6>🔍 Debug Output</h6>
+                    <div id="debugOutput" class="bg-light p-3 rounded" style="height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.8em;">
+                        Debug-Nachrichten werden hier angezeigt...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const eventId = {{ event.id }};
+let simulationTimer = null;
+let currentStep = 0;
+
+function debugLog(message) {
+    const debugOutput = document.getElementById('debugOutput');
+    const timestamp = new Date().toLocaleTimeString();
+    debugOutput.innerHTML += `[${timestamp}] ${message}\n`;
+    debugOutput.scrollTop = debugOutput.scrollHeight;
+    console.log('🔍 DEBUG:', message);
+}
+
+function showProgressBar() {
+    debugLog('📊 Zeige Progress Bar...');
+    const progressDiv = document.getElementById('optimizationProgress');
+    if (progressDiv) {
+        progressDiv.style.display = 'block';
+        debugLog('✅ Progress Bar erfolgreich angezeigt');
+    } else {
+        debugLog('❌ Progress Bar Element nicht gefunden!');
+    }
+}
+
+function updateProgressBar(percentage, task) {
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const currentTask = document.getElementById('currentTask');
+    
+    const safePercentage = parseFloat(percentage) || 0;
+    
+    debugLog(`📊 Update Progress: ${safePercentage}% - ${task}`);
+    
+    if (progressBar) {
+        progressBar.style.width = safePercentage + '%';
+        progressBar.setAttribute('aria-valuenow', safePercentage);
+        debugLog('✅ Progress Bar aktualisiert');
+    } else {
+        debugLog('❌ Progress Bar Element nicht gefunden');
+    }
+    
+    if (progressText) {
+        progressText.textContent = Math.round(safePercentage) + '%';
+        debugLog('✅ Progress Text aktualisiert');
+    }
+    
+    if (currentTask) {
+        currentTask.textContent = task;
+        debugLog('✅ Current Task aktualisiert');
+    }
+}
+
+function simulateProgress() {
+    debugLog('🎬 Starte Fortschritts-Simulation...');
+    showProgressBar();
+    
+    currentStep = 0;
+    const steps = [
+        { percentage: 20, task: 'Lade Teams und Daten...', delay: 1000 },
+        { percentage: 40, task: 'Berechne Entfernungen...', delay: 2000 },
+        { percentage: 60, task: 'Diversitäts-Optimierung...', delay: 3000 },
+        { percentage: 80, task: 'Gastküchen-Zuordnung...', delay: 1500 },
+        { percentage: 100, task: 'Optimierung abgeschlossen!', delay: 1000 }
+    ];
+    
+    simulationTimer = setInterval(() => {
+        if (currentStep < steps.length) {
+            const step = steps[currentStep];
+            updateProgressBar(step.percentage, step.task);
+            
+            // Update Log
+            const logElement = document.getElementById('optimizationLog');
+            if (logElement) {
+                const timestamp = new Date().toLocaleTimeString();
+                logElement.textContent += `[${timestamp}] Schritt ${currentStep + 1}/5: ${step.task}\n`;
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+            
+            currentStep++;
+            
+            if (currentStep >= steps.length) {
+                clearInterval(simulationTimer);
+                debugLog('🎉 Simulation abgeschlossen!');
+                
+                // Success Animation
+                const progressBar = document.getElementById('progressBar');
+                if (progressBar) {
+                    progressBar.className = 'progress-bar bg-success';
+                    progressBar.innerHTML = '<i class="bi bi-check-circle"></i> Abgeschlossen!';
+                }
+            }
+        }
+    }, 1500);
+}
+
+function testAPI() {
+    debugLog('📡 Teste API-Endpoint...');
+    
+    fetch(`/events/${eventId}/optimization-progress/`)
+        .then(response => {
+            debugLog(`📡 API Response Status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            debugLog('📊 API Data erhalten:');
+            debugLog(JSON.stringify(data, null, 2));
+            
+            // Update UI mit echten Daten
+            if (data.percentage !== undefined) {
+                updateProgressBar(data.percentage, data.current_task || 'API Test');
+                showProgressBar();
+            }
+            
+            if (data.logs && data.logs.length > 0) {
+                const logElement = document.getElementById('optimizationLog');
+                if (logElement) {
+                    logElement.textContent = data.logs.join('\n');
+                }
+            }
+        })
+        .catch(error => {
+            debugLog(`❌ API Fehler: ${error.message}`);
+        });
+}
+
+function resetProgress() {
+    debugLog('🔄 Reset Progress Bar...');
+    
+    if (simulationTimer) {
+        clearInterval(simulationTimer);
+        simulationTimer = null;
+    }
+    
+    const progressDiv = document.getElementById('optimizationProgress');
+    if (progressDiv) {
+        progressDiv.style.display = 'none';
+    }
+    
+    updateProgressBar(0, 'Starte Optimierung...');
+    
+    const logElement = document.getElementById('optimizationLog');
+    if (logElement) {
+        logElement.textContent = 'Warte auf Logs...';
+    }
+    
+    const progressBar = document.getElementById('progressBar');
+    if (progressBar) {
+        progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated';
+        progressBar.innerHTML = '<span id="progressText">0%</span>';
+    }
+    
+    debugLog('✅ Reset abgeschlossen');
+}
+
+// Initialer Debug-Log
+document.addEventListener('DOMContentLoaded', function() {
+    debugLog('🚀 Debug-Seite geladen');
+    debugLog(`📅 Event ID: ${eventId}`);
+    debugLog('🔧 Bereit für Tests!');
+});
+</script>
+
+<!-- CSS für Animation -->
+<style>
+.rotate {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+{% endblock %}

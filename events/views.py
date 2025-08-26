@@ -1,9 +1,13 @@
+from optimization.models import OptimizationRun
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 from django.http import JsonResponse
+from django.core.cache import cache
 import json
+import logging
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Count
 from django.db import models
@@ -13,7 +17,9 @@ from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 from .models import Event, Course, TeamRegistration, EventOrganizer
 from accounts.models import Team, TeamMembership
-from optimization.models import OptimizationRun
+
+# Logger setup
+logger = logging.getLogger(__name__)
 
 
 # REST API ViewSets
@@ -680,6 +686,28 @@ def start_optimization(request, event_id):
         event.status = 'optimized'
         event.save()
 
+        # Markiere Erfolg im Cache für Live-Updates
+        from django.core.cache import cache
+        progress_key = f"optimization_progress_{event.id}"
+        log_key = f"optimization_log_{event.id}"
+
+        cache.set(progress_key, {
+            'step': 5,
+            'total_steps': 5,
+            'current_task': 'Optimierung erfolgreich abgeschlossen!',
+            'percentage': 100,
+            'status': 'completed',
+            'timestamp': timezone.now().isoformat()
+        }, timeout=300)
+
+        # Erfolgs-Log hinzufügen
+        current_logs = cache.get(log_key, [])
+        current_logs.append({
+            'timestamp': timezone.now().strftime('%H:%M:%S'),
+            'message': f'✅ ABGESCHLOSSEN: {team_count} Teams optimiert, {total_distance:.1f}km Gesamtdistanz'
+        })
+        cache.set(log_key, current_logs, timeout=300)
+
         messages.success(
             request,
             f'Optimierung erfolgreich abgeschlossen! {team_count} Teams optimiert mit '
@@ -689,6 +717,31 @@ def start_optimization(request, event_id):
     except Exception as e:
         event.status = 'registration_closed'
         event.save()
+
+        # Markiere Fehler im Cache für Live-Updates
+        from django.core.cache import cache
+        progress_key = f"optimization_progress_{event.id}"
+        log_key = f"optimization_log_{event.id}"
+
+        cache.set(progress_key, {
+            'step': 0,
+            'total_steps': 5,
+            'current_task': 'Optimierung fehlgeschlagen',
+            'percentage': 0,
+            'status': 'error',
+            'error': str(e),
+            'timestamp': timezone.now().isoformat()
+        }, timeout=300)
+
+        # Fehler-Log hinzufügen
+        current_logs = cache.get(log_key, [])
+        current_logs.append({
+            'timestamp': timezone.now().strftime('%H:%M:%S'),
+            'message': f'FEHLER: {str(e)}'
+        })
+        cache.set(log_key, current_logs, timeout=300)
+
+        logger.error(f"Optimierung für Event {event.id} fehlgeschlagen: {e}")
         messages.error(
             request, f'Fehler bei der Optimierung: {str(e)}')
 
@@ -936,10 +989,30 @@ def get_optimization_progress(request, event_id):
 
     logs = cache.get(log_key, [])
 
+    # Format für Frontend-Kompatibilität
+    log_strings = []
+    for log_entry in logs[-20:]:  # Nur die letzten 20 Log-Einträge
+        if isinstance(log_entry, dict):
+            log_strings.append(
+                f"[{log_entry.get('timestamp', '')}] {log_entry.get('message', '')}")
+        else:
+            log_strings.append(str(log_entry))
+
+    # Sichere Zahlenformatierung für JavaScript
+    percentage = progress.get('percentage', 0)
+    if isinstance(percentage, str):
+        percentage = float(percentage.replace(',', '.'))
+
     return JsonResponse({
         'success': True,
-        'progress': progress,
-        'logs': logs[-20:]  # Nur die letzten 20 Log-Einträge
+        'step': progress.get('step', 0),
+        'total_steps': progress.get('total_steps', 5),
+        'current_task': progress.get('current_task', 'Keine aktive Optimierung'),
+        'percentage': float(percentage),  # Sichere Konvertierung zu float
+        'status': progress.get('status', 'idle'),
+        'timestamp': progress.get('timestamp', ''),
+        'logs': log_strings,
+        'error': progress.get('error', None)
     })
 
 
@@ -957,6 +1030,9 @@ def run_additional_optimization(request, event_id):
             request, 'Sie haben keine Berechtigung, weitere Optimierungen zu starten.')
         return redirect('events:optimization_results', event_id=event_id)
 
+    # Cache-Key für Progress-Tracking
+    cache_key = f'optimization_progress_{event_id}'
+
     try:
         from events.optimization import RunningDinnerOptimizer
 
@@ -966,13 +1042,35 @@ def run_additional_optimization(request, event_id):
         additional_iterations = max(
             1, min(additional_iterations, 10))  # 1-10 Iterationen
 
-        messages.info(
-            request, f'🔄 Starte {additional_iterations} weitere Optimierungsiterationen...')
+        # Setze Progress auf 'running'
+        cache.set(cache_key, {
+            'step': 0,
+            'total_steps': 3,
+            'current_task': 'Starte weitere Optimierung...',
+            'percentage': 0,
+            'status': 'running',
+            'timestamp': timezone.now().isoformat(),
+            'logs': [f'🔄 Starte {additional_iterations} weitere Optimierungsiterationen...']
+        }, timeout=3600)
 
         # Führe zusätzliche Optimierung durch
         optimizer = RunningDinnerOptimizer(event)
         solution = optimizer.run_additional_optimization(
             max_additional_iterations=additional_iterations)
+
+        # Cache auf 'completed' setzen
+        cache.set(cache_key, {
+            'step': 3,
+            'total_steps': 3,
+            'current_task': 'Weitere Optimierung abgeschlossen!',
+            'percentage': 100,
+            'status': 'completed',
+            'timestamp': timezone.now().isoformat(),
+            'logs': [
+                f'🔄 Starte {additional_iterations} weitere Optimierungsiterationen...',
+                f'✅ Weitere Optimierung abgeschlossen! Neue Gesamtdistanz: {solution["objective_value"]:.1f}km'
+            ]
+        }, timeout=3600)
 
         messages.success(
             request,
@@ -982,6 +1080,19 @@ def run_additional_optimization(request, event_id):
 
     except Exception as e:
         logger.error(f"Weitere Optimierung fehlgeschlagen: {e}")
+
+        # Cache auf 'error' setzen
+        cache.set(cache_key, {
+            'step': 0,
+            'total_steps': 3,
+            'current_task': 'Fehler bei der Optimierung',
+            'percentage': 0,
+            'status': 'error',
+            'timestamp': timezone.now().isoformat(),
+            'error': str(e),
+            'logs': [f'❌ Weitere Optimierung fehlgeschlagen: {str(e)}']
+        }, timeout=3600)
+
         messages.error(
             request, f'❌ Weitere Optimierung fehlgeschlagen: {str(e)}')
 
@@ -994,10 +1105,10 @@ def get_afterparty(request, event_id):
     API-Endpoint zum Laden der Afterparty-Daten
     """
     event = get_object_or_404(Event, id=event_id)
-    
+
     if not event.can_user_manage_event(request.user):
         return JsonResponse({'error': 'Keine Berechtigung'}, status=403)
-    
+
     try:
         afterparty = event.after_party
         return JsonResponse({
@@ -1024,14 +1135,14 @@ def save_afterparty(request, event_id):
     API-Endpoint zum Speichern der Afterparty-Daten
     """
     event = get_object_or_404(Event, id=event_id)
-    
+
     if not event.can_user_manage_event(request.user):
         return JsonResponse({'error': 'Keine Berechtigung'}, status=403)
-    
+
     try:
         from events.models import AfterPartyLocation
         from datetime import time
-        
+
         # Parse time from string
         start_time_str = request.POST.get('start_time', '22:30')
         try:
@@ -1039,7 +1150,7 @@ def save_afterparty(request, event_id):
             start_time = time(hour, minute)
         except ValueError:
             start_time = time(22, 30)  # Default fallback
-        
+
         # Update or create afterparty
         afterparty, created = AfterPartyLocation.objects.update_or_create(
             event=event,
@@ -1052,7 +1163,7 @@ def save_afterparty(request, event_id):
                 'is_active': True
             }
         )
-        
+
         # Versuche Geocoding für neue/geänderte Adressen
         if created or afterparty.address != request.POST.get('address', ''):
             try:
@@ -1063,13 +1174,14 @@ def save_afterparty(request, event_id):
                     afterparty.latitude = coords[0]
                     afterparty.longitude = coords[1]
                     afterparty.save()
-                    logger.info(f"📍 Afterparty geocoded: {afterparty.address} → {coords}")
+                    logger.info(
+                        f"📍 Afterparty geocoded: {afterparty.address} → {coords}")
             except Exception as e:
                 logger.warning(f"⚠️ Afterparty Geocoding fehlgeschlagen: {e}")
-        
+
         action = 'erstellt' if created else 'aktualisiert'
         messages.success(request, f'Afterparty "{afterparty.name}" {action}')
-        
+
         return JsonResponse({
             'success': True,
             'afterparty': {
@@ -1080,7 +1192,22 @@ def save_afterparty(request, event_id):
                 'contact_info': afterparty.contact_info,
             }
         })
-        
+
     except Exception as e:
         logger.error(f"Afterparty speichern fehlgeschlagen: {e}")
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def debug_progress(request, event_id):
+    """Debug-Seite für Progress-Bar Testing"""
+    event = get_object_or_404(Event, id=event_id)
+
+    # Nur für Staff/Superuser oder Event-Organizer
+    if not (request.user.is_staff or request.user.is_superuser or
+            event.can_user_manage_teams(request.user)):
+        return redirect('events:event_detail', event_id=event_id)
+
+    return render(request, 'events/debug_progress.html', {
+        'event': event
+    })

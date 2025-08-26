@@ -215,12 +215,68 @@
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         {% if user_can_run_optimization %}
-                        <form method="post" action="{% url 'events:start_optimization' event_id=event.id %}" onsubmit="return confirm('Optimierung für {{ stats.confirmed_teams }} Teams starten? Dieser Vorgang kann nicht rückgängig gemacht werden.')">
+                        <form method="post" action="{% url 'events:start_optimization' event_id=event.id %}" onsubmit="return handleOptimizationStart(event);" id="optimizationForm">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-success w-100">
+                            <button type="submit" class="btn btn-success w-100" id="optimizationButton">
                                 <i class="bi bi-cpu"></i> Optimierung starten
                             </button>
                         </form>
+                        
+                        <!-- Debug Info -->
+                        <div id="debugInfo" class="mt-2" style="display: none;">
+                            <div class="alert alert-info">
+                                <small>🔧 Debug: <span id="debugMessage">Initialisiert...</span></small>
+                            </div>
+                        </div>
+                        
+                        <!-- Live Progress Bar -->
+                        <div id="optimizationProgress" style="display: none;" class="mt-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-gear-fill rotate"></i> Optimierung läuft...
+                                    </h6>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="progress mb-3" style="height: 25px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                             role="progressbar" 
+                                             id="progressBar"
+                                             style="width: 0%"
+                                             aria-valuenow="0" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            <span id="progressText">0%</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Current Task -->
+                                    <div class="mb-3">
+                                        <strong>Aktueller Schritt:</strong>
+                                        <span id="currentTask">Starte Optimierung...</span>
+                                    </div>
+                                    
+                                    <!-- Collapsible Log -->
+                                    <div class="accordion" id="logAccordion">
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="logHeading">
+                                                <button class="accordion-button collapsed" type="button" 
+                                                        data-bs-toggle="collapse" data-bs-target="#logCollapse" 
+                                                        aria-expanded="false" aria-controls="logCollapse">
+                                                    <i class="bi bi-terminal"></i>&nbsp; Detaillierte Logs anzeigen
+                                                </button>
+                                            </h2>
+                                            <div id="logCollapse" class="accordion-collapse collapse" 
+                                                 aria-labelledby="logHeading" data-bs-parent="#logAccordion">
+                                                <div class="accordion-body">
+                                                    <pre id="optimizationLog" class="bg-dark text-light p-3 rounded" style="max-height: 300px; overflow-y: auto; font-size: 0.85em;">Warte auf Logs...</pre>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         {% endif %}
                         
                         {% if event.status == 'optimized' %}
@@ -719,7 +775,258 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Fehler beim Speichern der Afterparty');
         });
     });
+
+// Live Optimization Progress Tracking - Global Scope
+let optimizationTimer = null;
+const eventId = {{ event.id }};
+
+function showDebugMessage(message) {
+    const debugDiv = document.getElementById('debugInfo');
+    const debugMessage = document.getElementById('debugMessage');
+    
+    if (debugDiv && debugMessage) {
+        debugDiv.style.display = 'block';
+        debugMessage.textContent = message;
+        console.log('🔧 DEBUG:', message);
+        
+        // Auto-hide nach 5 Sekunden
+        setTimeout(() => {
+            if (debugDiv) debugDiv.style.display = 'none';
+        }, 5000);
+    }
+}
+
+function handleOptimizationStart(event) {
+    console.log('🚀 Form submission intercepted for event ID:', eventId);
+    
+    // Verhindere Standard-Submit für Debug-Zwecke
+    event.preventDefault();
+    
+    // Zeige Progress Bar
+    startOptimization();
+    
+    // Sende Form programmatisch ab nach kurzem Delay
+    setTimeout(() => {
+        console.log('📤 Submitting form programmatically...');
+        const form = document.getElementById('optimizationForm');
+        if (form) {
+            // Entferne onsubmit um Rekursion zu vermeiden
+            form.onsubmit = null;
+            form.submit();
+        }
+    }, 500);
+    
+    return false; // Verhindere Standard-Submit
+}
+
+function startOptimization() {
+    showDebugMessage('Starte Optimierung UI...');
+    console.log('🚀 Starting optimization UI for event ID:', eventId);
+    
+    // Zeige Progress Bar
+    const progressDiv = document.getElementById('optimizationProgress');
+    if (progressDiv) {
+        progressDiv.style.display = 'block';
+        showDebugMessage('Progress Bar angezeigt!');
+        console.log('✅ Progress bar shown');
+    } else {
+        showDebugMessage('❌ Progress Bar Element nicht gefunden!');
+        console.error('❌ Progress bar element not found');
+        // Debugge verfügbare Elemente
+        const availableIds = Array.from(document.querySelectorAll('[id]')).map(el => el.id);
+        console.log('Available elements with IDs:', availableIds);
+        showDebugMessage('Verfügbare IDs: ' + availableIds.slice(0, 10).join(', '));
+    }
+    
+    // Deaktiviere Button
+    const button = document.getElementById('optimizationButton');
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-hourglass-split"></i> Optimierung läuft...';
+        showDebugMessage('Button deaktiviert');
+        console.log('✅ Button disabled');
+    } else {
+        showDebugMessage('❌ Optimierung Button nicht gefunden!');
+        console.error('❌ Optimization button not found');
+    }
+    
+    // Starte Progress-Polling nach kurzer Verzögerung (Server braucht Zeit zum Starten)
+    setTimeout(() => {
+        showDebugMessage('Starte Progress-Polling...');
+        console.log('⏱️ Starting progress polling...');
+        optimizationTimer = setInterval(updateOptimizationProgress, 2000); // Alle 2 Sekunden
+    }, 1000);
+}
+
+function updateOptimizationProgress() {
+    console.log('📡 Fetching progress for event:', eventId);
+    
+    fetch(`/events/${eventId}/optimization-progress/`)
+        .then(response => {
+            console.log('📡 Progress response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Progress data received:', data);
+            
+            if (data.status === 'completed') {
+                // Optimierung abgeschlossen
+                console.log('✅ Optimization completed!');
+                clearInterval(optimizationTimer);
+                
+                // Progress auf 100%
+                updateProgressBar(100, 'Optimierung abgeschlossen!');
+                
+                // Success Animation
+                const progressBar = document.getElementById('progressBar');
+                progressBar.className = 'progress-bar bg-success';
+                progressBar.innerHTML = '<i class="bi bi-check-circle"></i> Abgeschlossen!';
+                
+                // Button wieder aktivieren und umleiten
+                setTimeout(() => {
+                    window.location.href = `/events/${eventId}/results/`;
+                }, 2000);
+                
+            } else if (data.status === 'error') {
+                // Fehler aufgetreten
+                clearInterval(optimizationTimer);
+                
+                const progressBar = document.getElementById('progressBar');
+                progressBar.className = 'progress-bar bg-danger';
+                progressBar.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Fehler!';
+                
+                document.getElementById('currentTask').textContent = 'Fehler: ' + (data.error || 'Unbekannter Fehler');
+                
+                // Button wieder aktivieren
+                const button = document.getElementById('optimizationButton');
+                button.disabled = false;
+                button.innerHTML = '<i class="bi bi-cpu"></i> Optimierung starten';
+                
+            } else if (data.status === 'running') {
+                // Update Progress - sicherere Zahlenkonvertierung
+                const safePercentage = parseFloat(String(data.percentage).replace(',', '.')) || 0;
+                updateProgressBar(safePercentage, data.current_task);
+            }
+            
+            // Update Logs
+            updateOptimizationLogs();
+            
+        })
+        .catch(error => {
+            console.error('Error fetching progress:', error);
+            // Bei Netzwerkfehlern nicht abbrechen, weiter versuchen
+        });
+}
+
+function updateProgressBar(percentage, task) {
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const currentTask = document.getElementById('currentTask');
+    
+    // Doppelte Sichere Zahlenformatierung (amerikanisches Format für HTML)
+    let safePercentage = parseFloat(String(percentage).replace(',', '.')) || 0;
+    
+    console.log('📊 Updating progress bar:', safePercentage + '%', 'Task:', task);
+    showDebugMessage(`Progress: ${safePercentage}% - ${task}`);
+    
+    if (progressBar) {
+        progressBar.style.width = safePercentage + '%';
+        progressBar.setAttribute('aria-valuenow', safePercentage);
+    }
+    
+    if (progressText) {
+        progressText.textContent = Math.round(safePercentage) + '%';
+    }
+    
+    if (currentTask) {
+        currentTask.textContent = task;
+    }
+}
+
+function updateOptimizationLogs() {
+    fetch(`/events/${eventId}/optimization-progress/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.logs && data.logs.length > 0) {
+                const logElement = document.getElementById('optimizationLog');
+                const logText = data.logs.join('\n');
+                
+                if (logElement && logElement.textContent !== logText) {
+                    logElement.textContent = logText;
+                    // Auto-scroll zum Ende
+                    logElement.scrollTop = logElement.scrollHeight;
+                    console.log('📝 Logs updated, entries:', data.logs.length);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error fetching logs:', error);
+        });
+}
+
+// Initialisierung beim Laden der Seite
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Page loaded, checking elements...');
+    showDebugMessage('Seite geladen - Event ID: ' + eventId);
+    
+    // Prüfe wichtige Elemente
+    const elements = [
+        'optimizationProgress',
+        'progressBar', 
+        'progressText',
+        'currentTask',
+        'optimizationLog',
+        'optimizationButton'
+    ];
+    
+    let missingElements = [];
+    elements.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) {
+            missingElements.push(id);
+        }
+    });
+    
+    if (missingElements.length > 0) {
+        showDebugMessage('⚠️ Fehlende Elemente: ' + missingElements.join(', '));
+        console.warn('Missing elements:', missingElements);
+    } else {
+        showDebugMessage('✅ Alle Progress-Elemente gefunden!');
+        console.log('✅ All progress elements found');
+    }
+    
+    // Test-Button hinzufügen (nur für Debug)
+    if (window.location.search.includes('debug=1')) {
+        const debugButton = document.createElement('button');
+        debugButton.textContent = '🧪 Test Progress Bar';
+        debugButton.className = 'btn btn-outline-secondary btn-sm mt-2';
+        debugButton.onclick = function() {
+            startOptimization();
+        };
+        
+        const debugInfo = document.getElementById('debugInfo');
+        if (debugInfo) {
+            debugInfo.appendChild(debugButton);
+        }
+    }
 });
+
+// Expose functions globally for debugging
+window.startOptimization = startOptimization;
+window.updateProgressBar = updateProgressBar;
+window.handleOptimizationStart = handleOptimizationStart;
 </script>
+
+<!-- CSS für Animation -->
+<style>
+.rotate {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
 
 {% endblock %}

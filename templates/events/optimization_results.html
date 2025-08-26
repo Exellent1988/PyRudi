@@ -556,7 +556,7 @@ const teamData = [
             "main_course": {% if assignment.hosts_main_course %}"{{ assignment.hosts_main_course.name|escapejs }}"{% else %}null{% endif %},
             "dessert": {% if assignment.hosts_dessert %}"{{ assignment.hosts_dessert.name|escapejs }}"{% else %}null{% endif %}
         }
-    }{% if not forloop.last %},{% endif %    }
+    }{% if not forloop.last %},{% endif %}
 {% endfor %}
 ];
 
@@ -948,21 +948,26 @@ async function updateProgress() {
         const response = await fetch(`/events/{{ event.id }}/optimization-progress/`);
         const data = await response.json();
         
+        console.log('📊 Progress API Response:', data);
+        
         if (data.success) {
-            // Update Progress Bar
+            // Update Progress Bar - sichere Zahlenkonvertierung
             const progressBar = document.getElementById('progressBar');
             const currentTask = document.getElementById('currentTask');
             
-            progressBar.style.width = data.progress.percentage + '%';
-            progressBar.setAttribute('aria-valuenow', data.progress.percentage);
-            progressBar.textContent = data.progress.percentage + '%';
-            currentTask.textContent = data.progress.current_task;
+            // Sichere Percentage-Konvertierung (wie in manage_event.html)
+            const safePercentage = parseFloat(String(data.percentage || 0).replace(',', '.')) || 0;
+            
+            progressBar.style.width = safePercentage + '%';
+            progressBar.setAttribute('aria-valuenow', safePercentage);
+            progressBar.textContent = Math.round(safePercentage) + '%';
+            currentTask.textContent = data.current_task || 'Optimierung läuft...';
             
             // Update Progress Bar color based on status
             progressBar.className = 'progress-bar progress-bar-striped';
-            if (data.progress.status === 'running') {
+            if (data.status === 'running') {
                 progressBar.className += ' progress-bar-animated bg-primary';
-            } else if (data.progress.status === 'completed') {
+            } else if (data.status === 'completed') {
                 progressBar.className += ' bg-success';
             } else {
                 progressBar.className += ' bg-secondary';
@@ -971,16 +976,20 @@ async function updateProgress() {
             // Update Logs
             const logsContainer = document.getElementById('optimizationLogs');
             if (data.logs && data.logs.length > 0) {
+                // Logs sind bereits formatierte Strings von der API
                 logsContainer.innerHTML = data.logs.map(log => 
-                    `<div><span class="text-primary">[${log.timestamp}]</span> ${log.message}</div>`
+                    `<div class="text-muted small">${log}</div>`
                 ).join('');
                 // Auto-scroll to bottom
                 logsContainer.scrollTop = logsContainer.scrollHeight;
             }
             
             // Stoppe Tracking wenn abgeschlossen
-            if (data.progress.status === 'completed') {
-                setTimeout(stopProgressTracking, 5000); // Stoppe nach 5 Sekunden
+            if (data.status === 'completed') {
+                setTimeout(() => {
+                    stopProgressTracking();
+                    location.reload(); // Lade Seite neu für aktualisierte Ergebnisse
+                }, 2000);
             }
         }
     } catch (error) {
