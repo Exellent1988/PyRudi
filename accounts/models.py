@@ -357,6 +357,15 @@ class Team(models.Model):
         return self.members.filter(teammembership__is_active=True)
 
     @property
+    def members_with_roles(self):
+        """Gibt alle aktiven Mitglieder mit ihren Rollen zurück"""
+        from django.db.models import Q
+        memberships = TeamMembership.objects.filter(
+            team=self, is_active=True
+        ).select_related('user').order_by('role', 'joined_at')
+        return memberships
+
+    @property
     def team_dietary_restrictions(self):
         """Gibt alle Ernährungseinschränkungen des Teams zurück"""
         from django.db.models import Q

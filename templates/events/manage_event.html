@@ -123,8 +123,22 @@
                                             {% endif %}
                                         </div>
                                         <div class="small text-muted">
-                                            {% for member in registration.team.active_members %}
-                                                {{ member.full_name }}{% if not forloop.last %}, {% endif %}
+                                            {% for membership in registration.team.members_with_roles %}
+                                                <span 
+                                                    {% if membership.role == 'leader' %}class="fw-bold member-name"{% else %}class="member-name"{% endif %}
+                                                    data-bs-toggle="tooltip" 
+                                                    data-bs-placement="top"
+                                                    data-bs-html="true"
+                                                    data-email="{{ membership.user.email }}"
+                                                    title="<strong>{{ membership.user.full_name }}</strong><br>
+                                                           <i class='bi bi-envelope'></i> {{ membership.user.email }}<br>
+                                                           {% if membership.user.phone_number %}<i class='bi bi-telephone'></i> {{ membership.user.phone_number }}<br>{% endif %}
+                                                           <i class='bi bi-person-badge'></i> {{ membership.get_role_display }}<br>
+                                                           <i class='bi bi-calendar'></i> Seit {{ membership.joined_at|date:'d.m.Y' }}<br>
+                                                           <small style='color: #ffc107;'>💡 Klick zum E-Mail kopieren</small>"
+                                                    style="cursor: pointer; text-decoration: underline;">
+                                                    {{ membership.user.full_name }}{% if membership.role == 'leader' %} 👑{% endif %}
+                                                </span>{% if not forloop.last %}, {% endif %}
                                             {% empty %}
                                                 <em>Keine Mitglieder</em>
                                             {% endfor %}
@@ -1109,5 +1123,79 @@ window.handleOptimizationStart = handleOptimizationStart;
     100% { transform: rotate(360deg); }
 }
 </style>
+
+<script>
+// Initialize Bootstrap tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            html: true,
+            trigger: 'hover focus'
+        });
+    });
+    
+    // Handle email copying when clicking on member names
+    document.querySelectorAll('.member-name').forEach(function(element) {
+        element.addEventListener('click', function(e) {
+            e.preventDefault();
+            const email = this.getAttribute('data-email');
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(email).then(function() {
+                // Show success toast
+                showCopyToast(email);
+            }).catch(function(err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = email;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showCopyToast(email);
+            });
+        });
+    });
+});
+
+// Show copy success toast
+function showCopyToast(email) {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-success border-0';
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.style.position = 'fixed';
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-check-circle me-2"></i>
+                E-Mail kopiert: <strong>${email}</strong>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Initialize and show toast
+    const bootstrapToast = new bootstrap.Toast(toast, {
+        autohide: true,
+        delay: 3000
+    });
+    bootstrapToast.show();
+    
+    // Remove toast from DOM after it's hidden
+    toast.addEventListener('hidden.bs.toast', function() {
+        document.body.removeChild(toast);
+    });
+}
+</script>
 
 {% endblock %}

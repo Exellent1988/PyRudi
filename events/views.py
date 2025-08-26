@@ -305,7 +305,7 @@ def manage_event(request, event_id):
     # Hole Event-Daten
     registrations = TeamRegistration.objects.filter(
         event=event).select_related('team').prefetch_related(
-        'team__members__teammembership_set'
+        'team__teammembership_set__user'
     )
     organizers = EventOrganizer.objects.filter(
         event=event, is_active=True).select_related('user')
