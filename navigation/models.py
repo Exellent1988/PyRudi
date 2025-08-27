@@ -88,7 +88,7 @@ class Route(models.Model):
         Address, on_delete=models.CASCADE, related_name='routes_to', verbose_name=_('Zu Adresse')
     )
     transport_mode = models.CharField(
-        _('Verkehrsmittel'), max_length=20, choices=TRANSPORT_MODES, default='driving'
+        _('Verkehrsmittel'), max_length=20, choices=TRANSPORT_MODES, default='walking'
     )
 
     # Routen-Daten
@@ -194,7 +194,7 @@ class NavigationSession(models.Model):
 
     # Navigation-Präferenzen
     preferred_transport_mode = models.CharField(
-        _('Bevorzugtes Verkehrsmittel'), max_length=20, choices=Route.TRANSPORT_MODES, default='driving'
+        _('Bevorzugtes Verkehrsmittel'), max_length=20, choices=Route.TRANSPORT_MODES, default='walking'
     )
     avoid_tolls = models.BooleanField(_('Maut vermeiden'), default=False)
     avoid_highways = models.BooleanField(
