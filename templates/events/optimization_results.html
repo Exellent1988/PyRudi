@@ -209,7 +209,7 @@
                                         </div>
                                         <div class="card-body">
                                             {% for host_info in hosts %}
-                                            <div class="mb-3 p-3 border rounded bg-white team-card" data-team-id="{{ host_info.host.id }}" data-team-name="{{ host_info.host.name }}">
+                                            <div class="mb-3 p-3 border rounded  team-card" data-team-id="{{ host_info.host.id }}" data-team-name="{{ host_info.host.name }}">
                                                 <div class="d-flex align-items-center mb-2">
                                                     <i class="bi bi-house-fill text-primary me-2"></i>
                                                     <strong class="team-name-clickable" style="cursor: pointer; text-decoration: underline;" onclick="selectGlobalTeam('{{ host_info.host.id }}', '{{ host_info.host.name }}')">{{ host_info.host.name }}</strong>
@@ -1273,7 +1273,7 @@ function highlightTeam(teamId, teamName) {
     // Alle Cards mit diesem Team hervorheben (auch in Gang-Tabs)
     document.querySelectorAll(`.team-card[data-team-id="${teamId}"]`).forEach(card => {
         card.classList.add('highlighted-team');
-        card.style.backgroundColor = '#fff3cd';
+        card.style.backgroundColor = '#ffc107';
         card.style.border = '2px solid #ffc107';
         card.style.borderRadius = '8px';
         card.style.boxShadow = '0 4px 8px rgba(255, 193, 7, 0.3)';
