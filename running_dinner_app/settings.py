@@ -88,19 +88,33 @@ WSGI_APPLICATION = 'running_dinner_app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='running_dinner_dev'),
-        'USER': config('DB_USER', default='dev_user'),
-        'PASSWORD': config('DB_PASSWORD', default='dev_password'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5433', cast=int),
-        'OPTIONS': {
-            'connect_timeout': 20,
-        },
+# Database Configuration - Auto-detect available database
+USE_SQLITE = config('USE_SQLITE', default=False, cast=bool)
+
+if USE_SQLITE:
+    # SQLite fallback for environments without PostgreSQL
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+    print("📦 Using SQLite database (fallback mode)")
+else:
+    # PostgreSQL (preferred)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='running_dinner_dev'),
+            'USER': config('DB_USER', default='dev_user'),
+            'PASSWORD': config('DB_PASSWORD', default='dev_password'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432', cast=int),
+            'OPTIONS': {
+                'connect_timeout': 20,
+            },
+        }
+    }
 
 
 # Password validation
@@ -152,28 +166,47 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Redis & Caching Configuration
-REDIS_URL = config('REDIS_URL', default='redis://localhost:6380/1')
+# Redis & Caching Configuration - Auto-detect Redis
+USE_DB_SESSIONS = config('USE_DB_SESSIONS', default=False, cast=bool)
+REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/1')
 
-# Cache Configuration with Redis
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
-            'IGNORE_EXCEPTIONS': True,
-        },
-        'KEY_PREFIX': 'running_dinner',
-        'VERSION': 1,
-        'TIMEOUT': 300,  # 5 minutes default timeout
+if USE_DB_SESSIONS:
+    # Database sessions fallback
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
     }
-}
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+    print("📦 Using database sessions (Redis not available)")
+else:
+    # Redis caching (preferred)
+    try:
+        CACHES = {
+            'default': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': REDIS_URL,
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                    'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+                    'IGNORE_EXCEPTIONS': True,
+                },
+                'KEY_PREFIX': 'running_dinner',
+                'VERSION': 1,
+                'TIMEOUT': 300,  # 5 minutes default timeout
+            }
+        }
+        SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+        SESSION_CACHE_ALIAS = 'default'
+    except Exception:
+        # Fallback to database sessions
+        CACHES = {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            }
+        }
+        SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
-# Session Configuration with Redis
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
 SESSION_COOKIE_AGE = 86400  # 24 hours
 
 # Django REST Framework Settings

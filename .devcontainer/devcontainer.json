@@ -1,12 +1,12 @@
 {
     "name": "Running Dinner Django",
-    "dockerComposeFile": [
-        "../docker-compose.dev.yml"
-    ],
-    "service": "web",
-    "workspaceFolder": "/app",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11",
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
     "features": {
-        "ghcr.io/devcontainers/features/git:1": {}
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/apt-packages/apt-packages:1": {
+            "packages": "postgresql-client,redis-tools,curl,netcat-traditional"
+        }
     },
     "customizations": {
         "vscode": {
@@ -20,13 +20,22 @@
                 "python.defaultInterpreterPath": "/usr/local/bin/python",
                 "python.linting.enabled": true,
                 "python.linting.flake8Enabled": true,
-                "python.formatting.provider": "black"
+                "python.formatting.provider": "black",
+                "files.associations": {
+                    "**/templates/**/*.html": "django-html"
+                }
             }
         }
     },
-    "runArgs": [
-        "--network=host"
+    "forwardPorts": [
+        8000
     ],
+    "portsAttributes": {
+        "8000": {
+            "label": "Django Dev Server",
+            "onAutoForward": "notify"
+        }
+    },
     "postCreateCommand": "pip install -r requirements.txt",
     "remoteUser": "vscode"
 }
