@@ -134,19 +134,39 @@ security-check: ## Führe Security Checks aus
 	docker-compose -f docker-compose.dev.yml exec web python manage.py check --deploy
 
 # Initial Setup
-setup: ## Initiales Setup für neue Entwickler
-	@echo "🛠️  Setting up Running Dinner Development Environment..."
+dev-setup: ## Setup Development Environment (PostgreSQL + Redis)
+	@echo "🛠️  Setting up Running Dinner Development Environment with PostgreSQL + Redis..."
+	@echo "📋 Copying environment configuration..."
+	cp env_example.txt .env
+	@echo "🐳 Building and starting containers..."
 	make dev-build
 	make dev-up
-	sleep 10
+	@echo "⏳ Waiting for services to be ready..."
+	sleep 15
+	@echo "🗄️  Running database migrations..."
 	make migrate
+	@echo "📦 Collecting static files..."
+	make collectstatic
 	@echo ""
-	@echo "✅ Setup completed!"
+	@echo "✅ PostgreSQL + Redis Setup completed!"
 	@echo "🎉 Du kannst jetzt mit der Entwicklung beginnen:"
 	@echo "   - Django: http://localhost:8001"
 	@echo "   - Admin: http://localhost:8001/admin"
 	@echo "   - MailHog: http://localhost:8025"
-	@echo "   - pgAdmin: http://localhost:8080"
+	@echo "   - pgAdmin: http://localhost:8080 (admin@runningdinner.dev / admin)"
+	@echo "   - PostgreSQL: localhost:5433"
+	@echo "   - Redis: localhost:6380"
+
+setup: ## Initiales Setup für neue Entwickler (alias für dev-setup)
+	make dev-setup
+
+reset-db: ## Reset PostgreSQL database (Development)
+	@echo "🗑️  Resetting PostgreSQL database..."
+	docker-compose -f docker-compose.dev.yml exec db psql -U dev_user -d postgres -c "DROP DATABASE IF EXISTS running_dinner_dev;"
+	docker-compose -f docker-compose.dev.yml exec db psql -U dev_user -d postgres -c "CREATE DATABASE running_dinner_dev;"
+	@echo "🔄 Running migrations..."
+	make migrate
+	@echo "✅ Database reset completed!"
 
 # Hilfsfunktionen
 update-deps: ## Update Python Dependencies

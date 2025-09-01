@@ -1,24 +1,28 @@
 # Django Settings
-SECRET_KEY=your-secret-key-here
+SECRET_KEY=dev-secret-key-not-for-production-change-this
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
 
-# Database Settings
-DB_NAME=running_dinner
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_HOST=db
-DB_PORT=5432
+# Database Settings (Development - uses docker-compose.dev.yml)
+DB_NAME=running_dinner_dev
+DB_USER=dev_user
+DB_PASSWORD=dev_password
+DB_HOST=localhost
+DB_PORT=5433
+
+# Redis Settings (Development)
+REDIS_URL=redis://localhost:6380/1
 
 # OpenRouteService API (für Routenberechnung)
 OPENROUTE_API_KEY=your-openroute-api-key-here
 
-# Email Settings (Optional für Benachrichtigungen)
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
-EMAIL_HOST_USER=your-email@example.com
-EMAIL_HOST_PASSWORD=your-app-password
+# Email Settings (Development - MailHog)
+EMAIL_HOST=localhost
+EMAIL_PORT=1025
+EMAIL_USE_TLS=False
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
+DEFAULT_FROM_EMAIL=running-dinner@localhost
 
 # Security Settings
 SECURE_SSL_REDIRECT=False

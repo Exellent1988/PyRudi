@@ -90,8 +90,15 @@ WSGI_APPLICATION = 'running_dinner_app.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME', default='running_dinner_dev'),
+        'USER': config('DB_USER', default='dev_user'),
+        'PASSWORD': config('DB_PASSWORD', default='dev_password'),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='5433', cast=int),
+        'OPTIONS': {
+            'connect_timeout': 20,
+        },
     }
 }
 
@@ -144,6 +151,30 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Redis & Caching Configuration
+REDIS_URL = config('REDIS_URL', default='redis://localhost:6380/1')
+
+# Cache Configuration with Redis
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+            'IGNORE_EXCEPTIONS': True,
+        },
+        'KEY_PREFIX': 'running_dinner',
+        'VERSION': 1,
+        'TIMEOUT': 300,  # 5 minutes default timeout
+    }
+}
+
+# Session Configuration with Redis
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
+SESSION_COOKIE_AGE = 86400  # 24 hours
 
 # Django REST Framework Settings
 REST_FRAMEWORK = {

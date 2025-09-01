@@ -28,6 +28,7 @@ services:
     build:
       context: .
       target: development
+      dockerfile: Dockerfile.dev
     environment:
       - DEBUG=True
       - SECRET_KEY=dev-secret-key-not-for-production
@@ -38,6 +39,9 @@ services:
       - DB_PORT=5432
       - REDIS_URL=redis://redis:6379/1
       - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+      - EMAIL_HOST=mailhog
+      - EMAIL_PORT=1025
+      - EMAIL_USE_TLS=False
     volumes:
       # Live Code Reload
       - .:/app
@@ -49,9 +53,13 @@ services:
     depends_on:
       - db
       - redis
+      - mailhog
     networks:
       - running_dinner_dev_network
-    command: python manage.py runserver 0.0.0.0:8000
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
     stdin_open: true
     tty: true
 

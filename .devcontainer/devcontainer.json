@@ -1,12 +1,13 @@
 {
     "name": "Running Dinner Django",
-    "image": "mcr.microsoft.com/devcontainers/python:3.11",
-    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-    
+    "dockerComposeFile": [
+        "../docker-compose.dev.yml"
+    ],
+    "service": "web",
+    "workspaceFolder": "/app",
     "features": {
         "ghcr.io/devcontainers/features/git:1": {}
     },
-    
     "customizations": {
         "vscode": {
             "extensions": [
@@ -23,10 +24,9 @@
             }
         }
     },
-    
-    "forwardPorts": [8000],
-    
+    "runArgs": [
+        "--network=host"
+    ],
     "postCreateCommand": "pip install -r requirements.txt",
-    
     "remoteUser": "vscode"
 }
