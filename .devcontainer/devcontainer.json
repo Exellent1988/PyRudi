@@ -4,8 +4,10 @@
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
     "features": {
         "ghcr.io/devcontainers/features/git:1": {},
-        "ghcr.io/apt-packages/apt-packages:1": {
-            "packages": "postgresql-client,redis-tools,curl,netcat-traditional"
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": "true",
+            "configureZshAsDefaultShell": "true",
+            "installOhMyZsh": "true"
         }
     },
     "customizations": {
@@ -36,6 +38,6 @@
             "onAutoForward": "notify"
         }
     },
-    "postCreateCommand": "pip install -r requirements.txt",
+    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y postgresql-client redis-tools curl netcat-traditional && pip install -r requirements.txt",
     "remoteUser": "vscode"
 }

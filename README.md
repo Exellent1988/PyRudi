@@ -48,11 +48,10 @@ make prod-up           # Starte Production Setup
 Das System wird automatisch mit umfassenden Testdaten initialisiert:
 
 ### 🔑 Login-Daten
-**Wichtig: Verwende den Benutzernamen, NICHT die E-Mail-Adresse!**
 
 ```
 # Staff/Event-Organisator
-Benutzername: organizer
+Benutzername: organizer runningdinner.de
 Passwort: testpass123
 
 # Test-Teilnehmer  

@@ -441,6 +441,7 @@ class TeamMembership(models.Model):
     user = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
+        related_name='team_memberships',
         verbose_name=_('Benutzer')
     )
     team = models.ForeignKey(

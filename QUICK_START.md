@@ -50,6 +50,16 @@ python manage.py runserver 0.0.0.0:8000
 | 📊 **Dashboard** | http://localhost:8000/accounts/dashboard | User Dashboard |
 | 📅 **Events** | http://localhost:8000/events | Event Management |
 
+## 🔑 Test Login-Daten
+
+**WICHTIG: Login erfolgt mit E-Mail-Adresse, nicht Username!**
+
+| Rolle | E-Mail | Passwort | Berechtigung |
+|-------|--------|----------|--------------|
+| **Admin** | `admin@runningdinner.de` | `testpass123` | Superuser (alles) |
+| **Organizer** | `organizer@test.com` | `organizer123` | Event-Verwaltung |
+| **User** | `user@test.com` | `user123` | Team-Teilnahme |
+
 ## 🎉 Next Steps
 
 1. **Login** mit Demo-Accounts (siehe README.md)

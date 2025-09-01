@@ -34,12 +34,12 @@
                         
                         <div class="mb-3">
                             <label for="{{ form.username.id_for_label }}" class="form-label">
-                                <i class="bi bi-person text-primary"></i>
-                                Benutzername
+                                <i class="bi bi-envelope text-primary"></i>
+                                E-Mail-Adresse
                             </label>
-                            <input type="text" name="username" class="form-control" placeholder="z.B. organizer" required id="{{ form.username.id_for_label }}">
+                            <input type="email" name="username" class="form-control" placeholder="z.B. admin@runningdinner.de" required id="{{ form.username.id_for_label }}">
                             <div class="form-text">
-                                Verwende deinen <strong>Benutzernamen</strong>, nicht die E-Mail-Adresse
+                                Verwende deine <strong>E-Mail-Adresse</strong> zum Anmelden
                             </div>
                         </div>
 
@@ -86,15 +86,15 @@
                         <div class="col-12">
                             <h6 class="fw-bold">Event-Organisator:</h6>
                             <div class="bg-light p-2 rounded">
-                                <strong>Benutzername:</strong> <code>organizer</code><br>
-                                <strong>Passwort:</strong> <code>testpass123</code>
+                                <strong>E-Mail:</strong> <code>organizer@test.com</code><br>
+                                <strong>Passwort:</strong> <code>organizer123</code>
                             </div>
                         </div>
                         <div class="col-12">
-                            <h6 class="fw-bold">Teilnehmer:</h6>
+                            <h6 class="fw-bold">Administrator:</h6>
                             <div class="bg-light p-2 rounded">
-                                <strong>Benutzername:</strong> <code>anna_muller</code>, <code>tom_schmidt</code>, <code>lisa_weber</code>...<br>
-                                <strong>Passwort:</strong> <code>testpass123</code> (für alle)
+                                <strong>E-Mail:</strong> <code>admin@runningdinner.de</code><br>
+                                <strong>Passwort:</strong> <code>testpass123</code>
                             </div>
                         </div>
                     </div>

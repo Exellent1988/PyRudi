@@ -17,3 +17,4 @@ done
 
 echo "✅ Database $host:$port is ready!"
 exec $cmd
+
